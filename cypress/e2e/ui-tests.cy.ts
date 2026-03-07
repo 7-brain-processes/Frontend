@@ -1,329 +1,261 @@
+import type { Interception } from 'cypress/types/net-stubbing';
+
 describe('UI-tests', () => {
     beforeEach(() => {
-        // cy.visit('http://localhost:4173/#/');
-        //cy.viewport(1280, 768);
+        cy.visit('http://localhost:3000/#/');
     });
 
-    //готово
-    //проверка создания и проверка пустых полей/непроходящих валидацию
+    describe(`Проверка входа при пустых полях`, () => {
+        it('Выдает предупреждение', () => {
+            // Авторизация
+            cy.get('#login-button').click();
+
+            // Проверка на наличие предупреждения
+            cy.get('#username-error', { timeout: 5000 })
+                .should('be.visible')
+                .and('contain.text', 'Поле обязательно.');
+        });
+    });
+
     const testLoginData = [
         {
-            name: '88005553538', //1-200
-            description: 'password123' //0-2000
+            username: 'username',
+            password: 'password123'
         }
     ];
-    describe('создание курса', () => {
-        testLoginData.forEach(({ name, description }) => {
-            it('test', () => {
-                //открыта главная страница
-                cy.get();
+    describe(`Проверка входа`, () => {
+        testLoginData.forEach(({ username, password }) => {
+            it('Проверка данных пользователя при авторизации', () => {
 
-                //нажимаем на кнопку
-                cy.get('button.cursor-pointer').contains('+').click();
+                // Ввод данных в форму
+                if (username !== "") cy.get('[data-testid="username-input"]').type(username);
+                if (password !== "") cy.get('[data-testid="password-input"]').type(password);
 
-                //в выпадающем списке выбираем нужное
-                //открывающийся список
-                cy.get('button.cursor-pointer').contains('Создать курс').click();
+                // Авторизация
+                cy.get('#login-button').click();
 
-                //открывается модальное окно
+                // Проверяем, что перешли на главную страницу
+                cy.url().should('include', '/main')
+            })
+        })
+    })
+
+    describe(`Проверка регистрации при пустых полях`, () => {
+        it('Выдает предупреждение', () => {
+            // Регистрация
+            cy.get('#register-button').click();
+
+            // Проверка на наличие предупреждения
+            cy.get('[data-slot="form-message"]')
+                .should('be.visible')
+                .and('contain.text', 'Поле обязательно.');
+        });
+    });
+
+    const testRegistrationData = [
+        {
+            username: 'abс',
+            password: 'password123',
+            displayName: ''
+        },
+        {
+            username: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            password: 'password123',
+            displayName: 'displayName'
+        }
+    ];
+    describe(`Проверка регистрации`, () => {
+        testRegistrationData.forEach(({ username, password, displayName }) => {
+            it('Проверка данных пользователя при регистрации', () => {
+
+                // Ввод данных в форму
+                if (username !== "") cy.get('[data-testid="username-input"]').type(username);
+                if (password !== "") cy.get('[data-testid="password-input"]').type(password);
+                if (displayName !== "") cy.get('[data-testid="displayName-input"]').type(displayName);
+
+                // Регистрация
+                cy.get('#register-button').click();
+
+                // Проверяем, что перешли на главную страницу
+                cy.url().should('include', '/main')
+            })
+        })
+    })
+
+    const testWrongRegistrationData = [
+        {
+            username: 'ab',
+            password: 'password123',
+            displayName: ''
+        },
+        {
+            username: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            password: 'password123',
+            displayName: ''
+        }
+    ];
+    describe(`Проверка регистрации`, () => {
+        testWrongRegistrationData.forEach(({ username, password, displayName }) => {
+            it('Проверка неправильных данных пользователя при регистрации', () => {
+
+                // Ввод данных в форму
+                if (username !== "") cy.get('[data-testid="username-input"]').type(username);
+                if (password !== "") cy.get('[data-testid="password-input"]').type(password);
+                if (displayName !== "") cy.get('[data-testid="displayName-input"]').type(displayName);
+
+                // Регистрация
+                cy.get('#register-button').click();
+
+                // Проверка на наличие предупреждения
+                cy.get('[data-slot="form-message"]')
+                    .should('be.visible')
+                    .and('contain.text', 'Неправильная валидация.');
+            })
+        })
+    })
+
+    describe('Проверка создания курса при пустых полях', () => {
+        it('Выдает предупреждение', () => {
+            // Ввод данных в форму
+            cy.get('[data-testid="username-input"]').type("");
+            cy.get('[data-testid="password-input"]').type("");
+
+            // Авторизация
+            cy.get('#login-button').click();
+
+            cy.get('a[href="#/main"]').click();
+
+            cy.get('#createCourse-button').click();
+
+            // Проверяем, что модальное окно открылось
+            cy.get('[role="dialog"]').should('be.visible');
+
+            // Создание курса
+            cy.get('[role="dialog"]').contains('Создать').click();
+
+            // Проверка на наличие предупреждения
+            cy.get('[data-slot="form-message"]')
+                .should('be.visible')
+                .and('contain.text', 'Поле обязательно.');
+        });
+    });
+
+    const testCreateCourseData = [
+        {
+            name: 'Базы данных',
+            description: 'Курс для предмета базы данных'
+        }
+    ];
+    describe('Проверка создания курса', () => {
+        testCreateCourseData.forEach(({ name, description }) => {
+            it('Проверка данных при создании курса', () => {
+                // Ввод данных в форму
+                cy.get('[data-testid="username-input"]').type("");
+                cy.get('[data-testid="password-input"]').type("");
+
+                // Авторизация
+                cy.get('#login-button').click();
+
+                cy.get('a[href="#/main"]').click();
+
+                cy.get('#createCourse-button').click();
+
                 // Проверяем, что модальное окно открылось
                 cy.get('[role="dialog"]').should('be.visible');
 
-                //там заполняем необходимые поля
                 // Ввод данных в форму
-                if (name !== "") cy.get('input[placeholder="Введите название курса"]').type(name);
-                if (description !== "") cy.get('input[placeholder="Введите описание курса"]').type(description);
+                if (name !== "") cy.get('[data-testid="name-input"]').type(name);
+                if (description !== "") cy.get('[data-testid="description-input"]').type(description);
 
-                //нажимаем кнопку
-                // Авторизация
-                cy.get('[role="dialog"]').contains('Создать курс').click();
+                // Создание курса
+                cy.get('[role="dialog"]').contains('Создать').click();
 
-                //окно закрывается
                 // Проверяем, что модальное окно исчезло
                 cy.get('[role="dialog"]').should('not.exist');
 
                 // перенос в этот курсы
-
-
-                //открыта главная страница
-                //нажимаем на кнопку
-                //в выпадающем списке выбираем нужное
-                //открывается модальное окно
-                //там заполняем необходимые поля
-                //нажимаем кнопку
-                //окно закрывается
-                //перенос в этот курсы
-                //возможно проверка, что ты преподаватель
+                // cy.url().should('include', '/main')
             });
         });
     });
 
-    //готово
-    //проверка пустых полей
+    describe('Проверка присоединения к курсу при пустых полях', () => {
+        it('Выдает предупреждение', () => {
+            // Ввод данных в форму
+            cy.get('[data-testid="username-input"]').type("");
+            cy.get('[data-testid="password-input"]').type("");
 
-    describe('создание курса', () => {
-        it('test', () => {
-            //открыта главная страница
-            cy.get();
+            // Авторизация
+            cy.get('#login-button').click();
 
-            //нажимаем на кнопку
-            cy.get('button.cursor-pointer').contains('+').click();
+            cy.get('a[href="#/main"]').click();
 
-            //в выпадающем списке выбираем нужное
-            //открывающийся список
-            cy.get('button.cursor-pointer').contains('Создать курс').click();
+            cy.get('#joinCourse-button').click();
 
-            //открывается модальное окно
             // Проверяем, что модальное окно открылось
             cy.get('[role="dialog"]').should('be.visible');
 
-
-            //нажимаем кнопку
-            // Авторизация
-            cy.get('[role="dialog"]').contains('Создать курс').click();
+            // Присоединение к курсу
+            cy.get('[role="dialog"]').contains('Присоединиться').click();
 
             // Проверка на наличие предупреждения
             cy.get('[data-slot="form-message"]')
                 .should('be.visible')
-                .and('contain.text', 'Поле должно быть заполнено');
+                .and('contain.text', 'Поле обязательно.');
         });
     });
 
-    //готово
-    describe('покинуть курс', () => {
-        it('test', () => {
-            cy.get();
-            //открыта определенная страница
-            //тыкаем на кнопочку
-            cy.get('button.cursor-pointer').contains('Покинуть курс').click();
-
-            //курс удаляется из списка
-            //проверка получения всего списка без удаленного курса
-            //перенос на гллавную страницу
-
-
-        });
-    });
-
-    //готово
-    const testLoginDatas = [
+    const testJoinCourseData = [
         {
-            text: '88005553538' //1-5000
+            code: '123456'
         }
     ];
-    describe('оставить публичный комментарий к посту', () => {
-        testLoginDatas.forEach(({ text }) => {
-            it('test', () => {
+    describe('Проверка присоединения к курсу', () => {
+        testJoinCourseData.forEach(({ code }) => {
+            it('Проверка данных при присоединению к курсу', () => {
+                // Ввод данных в форму
+                cy.get('[data-testid="username-input"]').type("");
+                cy.get('[data-testid="password-input"]').type("");
 
-                //открыта определенная страница
-                cy.get();
+                // Авторизация
+                cy.get('#login-button').click();
 
-                //тыкаем на конкретный пост
-                cy.get('button.cursor-pointer').contains('Покинуть курс').click();
+                cy.get('a[href="#/main"]').click();
 
-                //открывается конкретный пост
-                cy.get();
+                cy.get('#joinCourse-button').click();
 
-                //тыкаем на добавить комментарий
-                cy.get('button.cursor-pointer').contains('Покинуть курс').click();
+                // Проверяем, что модальное окно открылось
+                cy.get('[role="dialog"]').should('be.visible');
 
-                //пишем в поле комментарий
-                if (text !== "") cy.get('input[placeholder="Введите название курса"]').type(text);
+                // Ввод данных в форму
+                if (code !== "") cy.get('[data-testid="code-input"]').type(code);
 
-                //нажимаем отправить
-                cy.get('[role="dialog"]').contains('Создать курс').click();
+                // Присоединение к курсу
+                cy.get('[role="dialog"]').contains('Присоединиться').click();
 
+                // Проверяем, что модальное окно исчезло
+                cy.get('[role="dialog"]').should('not.exist');
+
+                // перенос в этот курсы
+                // cy.url().should('include', '/main')
             });
         });
     });
 
-    //готово
-    describe('оставить публичный комментарий к посту', () => {
-        it('test', () => {
-
-            //открыта определенная страница
-            cy.get();
-
-            //тыкаем на конкретный пост
-            cy.get('button.cursor-pointer').contains('Покинуть курс').click();
-
-            //открывается конкретный пост
-            cy.get();
-
-            //нажимаем отправить
-            cy.get('[role="dialog"]').contains('Создать курс').click();
-
-            // Проверка на наличие предупреждения
-            cy.get('[data-slot="form-message"]')
-                .should('be.visible')
-                .and('contain.text', 'Поле должно быть заполнено');
-        });
-    });
-
-    //готово
-    describe('удаление решения задания', () => {
-        it('test', () => {
-            cy.get();
-            //открыта определенная страница
-            //тыкаем на конкретное задание
-            cy.get('button.cursor-pointer').contains('Покинуть курс').click();
-
-            //тыкаем на кнопку удаления конкретного решения
-            cy.get('button.cursor-pointer').contains('Покинуть курс').click();
-
-            //проверка, что решения больше нет
-        });
-    });
-
-    //готово
-    describe('просмотр решения задания', () => {
-        it('test', () => {
-            //открыта определенная страница
-            cy.get();
-
-            //тыкаем на конкретное задание
-            cy.get('button.cursor-pointer').contains('Покинуть курс').click();
-
-            //смотрим список с решениями
-            cy.get();
-
-        });
-    });
-
-    //готово
-    describe('создание решения задания', () => {
-        it('test', () => {
-            //открыта определенная страница
-            cy.get();
-
-            //тыкаем на вкладку заданий
-            cy.get();
-
-            //тыкаем на кнопку
-            cy.get('button.cursor-pointer').contains('Покинуть курс').click();
-
-            //открывается модальное окно
-            // Проверяем, что модальное окно открылось
-            cy.get('[role="dialog"]').should('be.visible');
-
-            //там заполняем необходимые поля
+    describe('Проверка покидания курса', () => {
+        it('Пользователь удаляется из курса', () => {
             // Ввод данных в форму
-            //if (name !== "") cy.get('input[placeholder="Введите название курса"]').type(name);
-            //if (description !== "") cy.get('input[placeholder="Введите описание курса"]').type(description);
+            cy.get('[data-testid="username-input"]').type("");
+            cy.get('[data-testid="password-input"]').type("");
 
-            //нажимаем кнопку
-            // Создание решения задания
-            cy.get('[role="dialog"]').contains('Создать курс').click();
-
-            //окно закрывается
-            // Проверяем, что модальное окно исчезло
-            cy.get('[role="dialog"]').should('not.exist');
-
-            //можно проверить, что решение появилось
-        });
-    });
-
-    //готово
-    describe('редактирование решения задания', () => {
-        it('test', () => {
-            //открыта определенная страница
-            cy.get();
-
-            //тыкаем на вкладку заданий
-            cy.get();
-
-            //тыкаем на кнопку
-            cy.get('button.cursor-pointer').contains('Покинуть курс').click();
-
-            //открывается модальное окно
-            // Проверяем, что модальное окно открылось
-            cy.get('[role="dialog"]').should('be.visible');
-
-            //там заполняем необходимые поля
-            // Ввод данных в форму
-            //if (name !== "") cy.get('input[placeholder="Введите название курса"]').type(name);
-            //if (description !== "") cy.get('input[placeholder="Введите описание курса"]').type(description);
-
-            //нажимаем кнопку
-            // Создание решения задания
-            cy.get('[role="dialog"]').contains('Создать курс').click();
-
-            //окно закрывается
-            // Проверяем, что модальное окно исчезло
-            cy.get('[role="dialog"]').should('not.exist');
-
-            //можно проверить, что решение появилось
-        });
-    });
-
-    describe('присоединение к курсу', () => {
-        it('test', () => {
-            cy.get();
-            //открыта главная страница
-            cy.get();
-
-            //нажимаем на кнопку
-            cy.get('button.cursor-pointer').contains('+').click();
-
-            //в выпадающем списке выбираем нужное
-            //открывающийся список
-            cy.get('button.cursor-pointer').contains('Создать курс').click();
-
-            //открывается модальное окно
-            // Проверяем, что модальное окно открылось
-            cy.get('[role="dialog"]').should('be.visible');
-
-            //там заполняем необходимые поля
-            // Ввод данных в форму
-            if (name !== "") cy.get('input[placeholder="Введите название курса"]').type(name);
-
-            //нажимаем кнопку
             // Авторизация
-            cy.get('[role="dialog"]').contains('Создать курс').click();
+            cy.get('#login-button').click();
 
-            //окно закрывается
-            // Проверяем, что модальное окно исчезло
-            cy.get('[role="dialog"]').should('not.exist');
+            cy.get('a[href="#/main"]').click();
 
-            // перенос в этот курсы
+            cy.get('#leaveCourse-button').click();
+
         });
     });
-
-
-
-
-    /*describe('присоединение к курсу как преподаватель', () => {
-        it('test', () => {
-            cy.get();
-            //открыта главная страница
-            //нажимаем на кнопку
-            //в выпадающем списке выбираем нужное
-            //открывается модальное окно
-            //там пищем код курса
-            //нажимаем кнопку
-            //окно закрывается
-            //перенос в этот курс
-        });
-    });
-
-    describe('присоединение к курсу как студент', () => {
-        it('test', () => {
-            cy.get();
-            //открыта главная страница
-            //нажимаем на кнопку
-            //в выпадающем списке выбираем нужное
-            //открывается модальное окно
-            //там пищем код курса
-            //нажимаем кнопку
-            //окно закрывается
-            //перенос в этот курс
-        });
-    });*/
-
-    /* describe('стать преподавателем курса', () => {
-         it('test', () => {
-             cy.get();
-         });
-     });*/
 
 })
