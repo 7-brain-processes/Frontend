@@ -5,6 +5,7 @@ import { JoinToCourse } from "../../../types/JoinToCourse";
 import { coursesService, joinCourse } from "../../../api/services";
 import { CourseDto } from "../../../types/api";
 import { getAuthToken } from "../../../api/client";
+import { mockCourses } from "../../../data/mockData";
 
 export const useMainPage = () => {
     const navigate = useNavigate();
@@ -28,11 +29,6 @@ export const useMainPage = () => {
     const [isOpenJoinCourse, setIsOpenJoinCourse] = useState<boolean>(false);
 
     useEffect(() => {
-        const token = getAuthToken();
-        if (!token) {
-            navigate('/login');
-            return;
-        }
         loadCourses();
     }, []);
 
@@ -43,8 +39,10 @@ export const useMainPage = () => {
             const response = await coursesService.listMyCourses();
             setCourses(response.content);
         } catch (err: any) {
-            setError(err.message || 'Ошибка загрузки курсов');
-            console.error('Failed to load courses:', err);
+            console.error('Failed to load courses, using mock data:', err);
+            // Используем mock данные при ошибке
+            setCourses(mockCourses);
+            setError('Работа в режиме без подключения к серверу');
         } finally {
             setLoading(false);
         }

@@ -61,14 +61,14 @@ const MainPage = () => {
                     {loading && <div className="loading">Загрузка курсов...</div>}
                     {error && <div className="error">{error}</div>}
 
-                    {!loading && !error && courses.length === 0 && (
+                    {!loading && courses.length === 0 && (
                         <div className="empty-state">
                             <p>У вас пока нет курсов</p>
                             <button onClick={() => handleIsOpenNewCourse(true)}>Создать первый курс</button>
                         </div>
                     )}
 
-                    {!loading && !error && courses.length > 0 && (
+                    {!loading && courses.length > 0 && (
                         <div className="courses-grid" data-testid="courses-list">
                             {courses.map((course) => (
                                 <CourseCard

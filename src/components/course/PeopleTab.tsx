@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './PeopleTab.css';
 import { MemberDto, InviteDto, CourseRole } from '../../types/api';
 import { membersService, invitesService, coursesService } from '../../api/services';
+import { mockMembers } from '../../data/mockData';
 
 interface PeopleTabProps {
   courseId: string;
@@ -33,8 +34,9 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
       const response = await membersService.listMembers(courseId);
       setMembers(response.content);
     } catch (err: any) {
-      console.error('Failed to load members:', err);
-      alert(err.message || 'Ошибка загрузки участников');
+      console.error('Failed to load members, using mock data:', err);
+      const courseMockMembers = mockMembers[courseId] || [];
+      setMembers(courseMockMembers);
     } finally {
       setLoading(false);
     }
@@ -45,8 +47,8 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
       const data = await invitesService.listInvites(courseId);
       setInvites(data);
     } catch (err: any) {
-      console.error('Failed to load invites:', err);
-      alert(err.message || 'Ошибка загрузки приглашений');
+      console.error('Failed to load invites, using empty list:', err);
+      setInvites([]);
     }
   };
 

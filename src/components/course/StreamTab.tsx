@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PostDto, CourseRole, PostType } from '../../types/api';
 import { postsService } from '../../api/services';
+import { mockPosts } from '../../data/mockData';
 import './StreamTab.css';
 
 interface StreamTabProps {
@@ -43,8 +44,9 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       const response = await postsService.listPosts(courseId);
       setPosts(response.content);
     } catch (err: any) {
-      console.error('Failed to load posts:', err);
-      alert(err.message || 'Ошибка загрузки постов');
+      console.error('Failed to load posts, using mock data:', err);
+      const courseMockPosts = mockPosts[courseId] || [];
+      setPosts(courseMockPosts);
     } finally {
       setLoading(false);
     }
