@@ -1,9 +1,57 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import InputForm from "../../components/InputForm";
 import SubmitButton from "../../components/SubmitButton";
-import { useAuthPage } from "./hooks/useAuthPage";
+import { Auth } from "../../types/Auth";
+import { login as loginApi } from "../../api/auth/login";
 
 const AuthPage = () => {
-    const { state, functions } = useAuthPage();
+    const navigate = useNavigate();
+
+    const [authForm, setAuthForm] = useState<Auth>({
+        username: '',
+        password: ''
+    });
+    const [errors, setErrors] = useState<Partial<Record<keyof Auth, string>>>({});
+
+    const validateAuthForm = (): boolean => {
+        const e: typeof errors = {};
+
+        if (!authForm?.username) {
+            e.username = 'Поле обязательно.';
+        }
+
+        if (!authForm?.password) {
+            e.password = 'Поле обязательно.';
+        }
+
+        setErrors(e);
+        return Object.keys(e).length === 0;
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setAuthForm(prev => ({ ...prev, [name]: value }));
+    };
+
+    const login = async () => {
+        if (!validateAuthForm()) return false;
+
+        try {
+            const result = await loginApi(authForm);
+            if (result) {
+                localStorage.setItem('token', result.token);
+                navigate('/main');
+                return;
+            }
+        }
+        catch (error: any) {
+            console.error(error.message);
+            alert(`Ошибка: ${error.message}`);
+        }
+    };
+
+    const navigateToRegistration = () => navigate('/registration');
 
     return (
         <div style={{
@@ -26,11 +74,11 @@ const AuthPage = () => {
                     label=""
                     name="username"
                     type="text"
-                    value={state.authForm?.username || ''}
+                    value={authForm?.username || ''}
                     placeholder="Имя пользователя"
-                    onChange={functions.handleChange}
-                    error={!!state.errors.username}
-                    helperText={state.errors.username}
+                    onChange={handleChange}
+                    error={!!errors.username}
+                    helperText={errors.username}
                     width="100%"
                     dataTestId="username-input"
                     errorTestId="username-error"
@@ -39,17 +87,17 @@ const AuthPage = () => {
                     label=""
                     name="password"
                     type="text"
-                    value={state.authForm?.password || ''}
+                    value={authForm?.password || ''}
                     placeholder="Пароль"
-                    onChange={functions.handleChange}
-                    error={!!state.errors.password}
-                    helperText={state.errors.password}
+                    onChange={handleChange}
+                    error={!!errors.password}
+                    helperText={errors.password}
                     width="100%"
                     dataTestId="password-input"
                 />
                 <div style={{ padding: '16px 0 0', display: 'flex', gap: '16px' }}>
-                    <SubmitButton id="login-button" text='Войти' colorScheme="primary" width="100%" onClick={functions.login} />
-                    <SubmitButton id="register-button" text='Зарегистрироваться' colorScheme="secondary" width="100%" onClick={functions.navigateToRegistration} />
+                    <SubmitButton id="login-button" text='Войти' colorScheme="primary" width="100%" onClick={login} />
+                    <SubmitButton id="register-button" text='Зарегистрироваться' colorScheme="secondary" width="100%" onClick={navigateToRegistration} />
                 </div>
             </div>
         </div>
