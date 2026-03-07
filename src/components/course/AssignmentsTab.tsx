@@ -54,6 +54,9 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   };
 
   const loadSolutions = async (postId: string) => {
+    if (userRole !== 'TEACHER') {
+      return;
+    }
     try {
       const response = await solutionsService.listSolutions(courseId, postId);
       setSolutions(response.content);
@@ -98,7 +101,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   };
 
   const handleGradeSolution = async (solutionId: string, grade: number) => {
-    if (!selectedAssignment) return;
+    if (!selectedAssignment || userRole !== 'TEACHER') return;
 
     try {
       await solutionsService.gradeSolution(courseId, selectedAssignment.id, solutionId, {

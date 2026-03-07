@@ -22,6 +22,17 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [expandedPost, setExpandedPost] = useState<string | null>(null);
 
+  const toDateTimeLocal = (isoString: string | undefined | null): string => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   useEffect(() => {
     loadPosts();
   }, [courseId]);
@@ -52,7 +63,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       title: post.title,
       content: post.content || '',
       type: post.type,
-      deadline: post.deadline || ''
+      deadline: toDateTimeLocal(post.deadline)
     });
     setShowCreatePost(true);
   };
@@ -85,7 +96,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
         const updatedPost = await postsService.updatePost(courseId, editingPost.id, {
           title: postForm.title,
           content: postForm.content || undefined,
-          deadline: postForm.deadline || undefined,
+          deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
         });
         setPosts(posts.map(p => (p.id === editingPost.id ? updatedPost : p)));
       } else {
@@ -93,7 +104,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           title: postForm.title,
           content: postForm.content || undefined,
           type: postForm.type,
-          deadline: postForm.deadline || undefined,
+          deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
         });
 
         if (selectedFiles.length > 0) {

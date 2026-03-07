@@ -14,7 +14,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const handleLogout = () => {
     if (window.confirm('Вы уверены, что хотите выйти?')) {
       removeAuthToken();
-      navigate('/auth');
+      navigate('/login');
     }
   };
 
