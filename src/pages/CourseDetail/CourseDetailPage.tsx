@@ -49,7 +49,7 @@ const CourseDetailPage = () => {
     );
   }
 
-  if (error || !course) {
+  if (!course) {
     return (
       <div className="courses-page">
         <Header onMenuClick={() => {}} />
@@ -64,6 +64,18 @@ const CourseDetailPage = () => {
   return (
     <div className="courses-page">
       <Header onMenuClick={handleMenuClick} />
+      {error && (
+        <div style={{
+          backgroundColor: '#fff3cd',
+          color: '#856404',
+          padding: '12px 20px',
+          borderBottom: '1px solid #ffeaa7',
+          textAlign: 'center',
+          fontSize: '14px'
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
       <Sidebar
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}

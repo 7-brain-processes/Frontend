@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './AssignmentsTab.css';
 import { PostDto, CourseRole, SolutionDto, PostType, SolutionStatus } from '../../types/api';
 import { postsService, solutionsService } from '../../api/services';
+import { mockPosts, mockSolutions, getMySolution } from '../../data/mockData';
 
 interface AssignmentsTabProps {
   courseId: string;
@@ -35,8 +36,10 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       const response = await postsService.listPosts(courseId, { type: 'TASK' });
       setAssignments(response.content);
     } catch (err: any) {
-      console.error('Failed to load assignments:', err);
-      alert(err.message || 'Ошибка загрузки заданий');
+      console.error('Failed to load assignments, using mock data:', err);
+      const courseMockPosts = mockPosts[courseId] || [];
+      const mockAssignments = courseMockPosts.filter(p => p.type === 'TASK');
+      setAssignments(mockAssignments);
     } finally {
       setLoading(false);
     }
@@ -48,8 +51,10 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       setMySolution(solution);
       setSolutionText(solution.text || '');
     } catch (err: any) {
-      setMySolution(null);
-      setSolutionText('');
+      console.error('Failed to load my solution, using mock data:', err);
+      const mockSolution = getMySolution(postId);
+      setMySolution(mockSolution);
+      setSolutionText(mockSolution?.text || '');
     }
   };
 
@@ -61,8 +66,9 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       const response = await solutionsService.listSolutions(courseId, postId);
       setSolutions(response.content);
     } catch (err: any) {
-      console.error('Failed to load solutions:', err);
-      alert(err.message || 'Ошибка загрузки решений');
+      console.error('Failed to load solutions, using mock data:', err);
+      const postMockSolutions = mockSolutions[postId] || [];
+      setSolutions(postMockSolutions);
     }
   };
 

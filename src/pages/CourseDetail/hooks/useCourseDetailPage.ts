@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { coursesService } from "../../../api/services";
 import { CourseDto, UpdateCourseRequest } from "../../../types/api";
 import { getAuthToken } from "../../../api/client";
+import { mockCourses } from "../../../data/mockData";
 
 export const useCourseDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -23,11 +24,6 @@ export const useCourseDetailPage = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const token = getAuthToken();
-        if (!token) {
-            navigate('/login');
-            return;
-        }
         loadCourse();
         loadAllCourses();
     }, [id]);
@@ -41,8 +37,14 @@ export const useCourseDetailPage = () => {
             const data = await coursesService.getCourse(id);
             setCourse(data);
         } catch (err: any) {
-            setError(err.message || 'Ошибка загрузки курса');
-            console.error('Failed to load course:', err);
+            console.error('Failed to load course, using mock data:', err);
+            const mockCourse = mockCourses.find(c => c.id === id);
+            if (mockCourse) {
+                setCourse(mockCourse);
+                setError('Работа в режиме без подключения к серверу');
+            } else {
+                setError(err.message || 'Ошибка загрузки курса');
+            }
         } finally {
             setLoading(false);
         }
@@ -53,7 +55,8 @@ export const useCourseDetailPage = () => {
             const response = await coursesService.listMyCourses();
             setAllCourses(response.content);
         } catch (err: any) {
-            console.error('Failed to load courses:', err);
+            console.error('Failed to load courses, using mock data:', err);
+            setAllCourses(mockCourses);
         }
     };
 
