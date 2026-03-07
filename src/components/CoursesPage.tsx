@@ -65,14 +65,14 @@ const CoursesPage: React.FC = () => {
 
   return (
     <div className="courses-page" data-testid="courses-page">
-      <Header onMenuClick={handleMenuClick} />
+      {/*<Header onMenuClick={handleMenuClick} />
       <Sidebar 
         isOpen={sidebarOpen} 
         isCollapsed={sidebarCollapsed} 
         onClose={handleSidebarClose}
         courses={courses}
         onCourseClick={handleCourseClick}
-      />
+      />*/}
       <main className={`courses-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="courses-container">
           <div className="courses-grid" data-testid="courses-list">
