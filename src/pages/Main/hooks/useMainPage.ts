@@ -171,7 +171,7 @@ export const useMainPage = () => {
             handleChangeCreateCourse,
             handleChangeJoinCourse,
             createNewCourse,
-            joinToCourse: joinToCourseFunc
+            joinToCourseFunc
         }
     };
 };

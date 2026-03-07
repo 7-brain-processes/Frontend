@@ -8,7 +8,7 @@ const RegistrationPage = () => {
     return (
         <div style={{
             position: 'relative',
-            top: 250,
+            top: 180,
             display: 'flex',
             justifyContent: 'center',
         }}>
@@ -17,7 +17,7 @@ const RegistrationPage = () => {
                 flexDirection: 'column',
                 gap: '24px',
                 padding: '48px',
-                width: '20%',
+                width: '40%',
                 border: '1px solid #CED2DA',
                 borderRadius: '16px'
             }}>

@@ -3,11 +3,12 @@ import AuthPage from "../pages/Auth/AuthPage";
 import RegistrationPage from "../pages/Registration/RegistrationPage";
 import MainPage from "../pages/Main/MainPage";
 import CourseDetailPage from "../pages/CourseDetail/CourseDetailPage";
-import CoursesPage from "../components/CoursesPage";
+//import CoursesPage from "../components/CoursesPage";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import { useState } from "react";
 import { Course } from "../components/CourseCard";
+import { mockCourses } from "../data/mockData";
 
 const Router = () => {
     const location = useLocation();
@@ -70,19 +71,19 @@ const Router = () => {
     };
     return (
         <div>
-            {location.pathname !== '/login' && location.pathname !== '/' && !localStorage.getItem('token') &&
+            {location.pathname !== '/login' && location.pathname !== '/' && location.pathname !== '/registration' && !localStorage.getItem('token') &&
                 <>
                     <Header onMenuClick={handleMenuClick} />
                     <Sidebar
                         isOpen={sidebarOpen}
                         isCollapsed={sidebarCollapsed}
                         onClose={handleSidebarClose}
-                        courses={courses}
+                        courses={mockCourses}
                         onCourseClick={handleCourseClick}
                     />
                 </>}
             <Routes>
-                <Route path="/" element={<CoursesPage />} />
+                <Route path="/" element={<AuthPage />} />
                 <Route path="/login" element={<AuthPage />} />
                 <Route path="/registration" element={<RegistrationPage />} />
                 <Route path="/main" element={<MainPage />} />

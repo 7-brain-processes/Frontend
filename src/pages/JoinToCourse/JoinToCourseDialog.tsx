@@ -23,9 +23,9 @@ const JoinToCourseDialog: React.FC<JoinToCourseDialogProps> = ({ isOpenJoinCours
             sx={{
                 '& .MuiPaper-root': {
                     borderRadius: '24px',
-                    width: '328px',
+                    width: '500px',
                     height: 'auto',
-                    padding: '72px 108px',
+                    padding: '40px 32px',
                     gap: '40px',
                     background: '#FFFFFF'
                 },

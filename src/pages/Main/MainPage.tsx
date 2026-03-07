@@ -1,5 +1,3 @@
-import Header from '../../components/Header';
-import Sidebar from '../../components/Sidebar';
 import CourseCard from '../../components/CourseCard';
 import CreateCourseDialog from "../CreateCourse/CreateCourseDialog";
 import JoinToCourseDialog from "../JoinToCourse/JoinToCourseDialog";
@@ -8,73 +6,40 @@ import './MainPage.css';
 
 const MainPage = () => {
     const { state, functions } = useMainPage();
-    const {
-        sidebarOpen,
-        sidebarCollapsed,
-        courses,
-        loading,
-        error,
-        createCourseForm,
-        joinToCourseForm,
-        errorsCreateCourseForm,
-        errorsJoinToCourseForm,
-        isOpenNewCourse,
-        isOpenJoinCourse
-    } = state;
-
-    const {
-        handleMenuClick,
-        handleSidebarClose,
-        handleCourseClick,
-        handleIsOpenNewCourse,
-        handleIsOpenJoinCourse,
-        handleChangeCreateCourse,
-        handleChangeJoinCourse,
-        createNewCourse,
-        joinToCourse
-    } = functions;
 
     return (
         <div className="courses-page" data-testid="main-page">
-            <Header onMenuClick={handleMenuClick} />
-            <Sidebar 
-                isOpen={sidebarOpen} 
-                isCollapsed={sidebarCollapsed} 
-                onClose={handleSidebarClose}
-                courses={courses}
-                onCourseClick={handleCourseClick}
-            />
-            <main className={`courses-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+            <main className={`courses-main ${state.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
                 <div className="courses-container">
                     <div className="courses-header">
                         <h1>Мои курсы</h1>
                         <div className="courses-header-buttons">
-                            <button className="create-course-btn" onClick={() => handleIsOpenNewCourse(true)}>
+                            <button className="create-course-btn" onClick={() => functions.handleIsOpenNewCourse(true)}>
                                 + Создать
                             </button>
-                            <button className="join-course-btn" onClick={() => handleIsOpenJoinCourse(true)}>
+                            <button className="join-course-btn" onClick={() => functions.handleIsOpenJoinCourse(true)}>
                                 Присоединиться
                             </button>
                         </div>
                     </div>
 
-                    {loading && <div className="loading">Загрузка курсов...</div>}
-                    {error && <div className="error">{error}</div>}
+                    {state.loading && <div className="loading">Загрузка курсов...</div>}
+                    {state.error && <div className="error">{state.error}</div>}
 
-                    {!loading && courses.length === 0 && (
+                    {!state.loading && state.courses.length === 0 && (
                         <div className="empty-state">
                             <p>У вас пока нет курсов</p>
-                            <button onClick={() => handleIsOpenNewCourse(true)}>Создать первый курс</button>
+                            <button onClick={() => functions.handleIsOpenNewCourse(true)}>Создать первый курс</button>
                         </div>
                     )}
 
-                    {!loading && courses.length > 0 && (
+                    {!state.loading && state.courses.length > 0 && (
                         <div className="courses-grid" data-testid="courses-list">
-                            {courses.map((course) => (
+                            {state.courses.map((course) => (
                                 <CourseCard
                                     key={course.id}
                                     course={course}
-                                    onClick={() => handleCourseClick(course.id)}
+                                    onClick={() => functions.handleCourseClick(course.id)}
                                 />
                             ))}
                         </div>
@@ -82,21 +47,21 @@ const MainPage = () => {
                 </div>
             </main>
 
-            <CreateCourseDialog 
-                isOpenNewCourse={isOpenNewCourse} 
-                handleIsOpenNewCourse={handleIsOpenNewCourse}
-                handleChangeCreateCourse={handleChangeCreateCourse} 
-                errorsCreateCourseForm={errorsCreateCourseForm}
-                createCourseForm={createCourseForm} 
-                createNewCourse={createNewCourse} 
+            <CreateCourseDialog
+                isOpenNewCourse={state.isOpenNewCourse}
+                handleIsOpenNewCourse={functions.handleIsOpenNewCourse}
+                handleChangeCreateCourse={functions.handleChangeCreateCourse}
+                errorsCreateCourseForm={state.errorsCreateCourseForm}
+                createCourseForm={state.createCourseForm}
+                createNewCourse={functions.createNewCourse}
             />
-            <JoinToCourseDialog 
-                isOpenJoinCourse={isOpenJoinCourse} 
-                handleIsOpenJoinCourse={handleIsOpenJoinCourse}
-                handleChangeJoinCourse={handleChangeJoinCourse} 
-                errorsJoinToCourseForm={errorsJoinToCourseForm}
-                joinToCourseForm={joinToCourseForm} 
-                joinToCourse={joinToCourse} 
+            <JoinToCourseDialog
+                isOpenJoinCourse={state.isOpenJoinCourse}
+                handleIsOpenJoinCourse={functions.handleIsOpenJoinCourse}
+                handleChangeJoinCourse={functions.handleChangeJoinCourse}
+                errorsJoinToCourseForm={state.errorsJoinToCourseForm}
+                joinToCourseForm={state.joinToCourseForm}
+                joinToCourse={functions.joinToCourseFunc}
             />
         </div>
     );

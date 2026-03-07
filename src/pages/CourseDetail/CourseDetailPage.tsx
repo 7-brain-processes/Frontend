@@ -63,7 +63,6 @@ const CourseDetailPage = () => {
 
   return (
     <div className="courses-page">
-      <Header onMenuClick={handleMenuClick} />
       {error && (
         <div style={{
           backgroundColor: '#fff3cd',
@@ -76,13 +75,7 @@ const CourseDetailPage = () => {
           ⚠️ {error}
         </div>
       )}
-      <Sidebar
-        isOpen={sidebarOpen}
-        isCollapsed={sidebarCollapsed}
-        onClose={handleSidebarClose}
-        courses={allCourses}
-        onCourseClick={handleCourseClick}
-      />
+
       <main className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {/* Course Header with Banner */}
         <div className="course-header" style={{ backgroundColor: color }}>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './Sidebar.css';
 import { Course, generateColor } from './CourseCard';
+import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -11,13 +12,15 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses = [], onCourseClick }) => {
+  const navigate = useNavigate();
+
   const [coursesExpanded, setCoursesExpanded] = useState(true);
   const menuItems = [
     {
       id: 'home',
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
         </svg>
       ),
       label: 'Главная страница',
@@ -27,7 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
       id: 'courses',
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
+          <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
         </svg>
       ),
       label: 'Курсы',
@@ -39,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
       id: 'assignments',
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
         </svg>
       ),
       label: 'Список заданий',
@@ -62,6 +65,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                   if (item.expandable && !isCollapsed) {
                     setCoursesExpanded(!coursesExpanded);
                   }
+                  if (item.id === 'home') {
+                    navigate('/main');
+                  }
+                  if (item.id === 'courses') {
+                    navigate('/courses');
+                  }
+                  if (item.id === 'assignments') {
+                    navigate('/assignments');
+                  }
                 }}
               >
                 <span className="sidebar-icon">{item.icon}</span>
@@ -71,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                     {item.expandable && (
                       <span className={`expand-icon ${coursesExpanded ? 'expanded' : ''}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M7 10l5 5 5-5z"/>
+                          <path d="M7 10l5 5 5-5z" />
                         </svg>
                       </span>
                     )}
@@ -87,9 +99,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                       data-testid={`sidebar-course-${course.id}`}
                       onClick={() => onCourseClick?.(course.id)}
                     >
-                      <span 
-                        className="course-submenu-color" 
-                        style={{ 
+                      <span
+                        className="course-submenu-color"
+                        style={{
                           backgroundColor: generateColor(course.id)
                         }}
                       >

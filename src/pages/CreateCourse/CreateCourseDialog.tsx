@@ -23,9 +23,9 @@ const CreateCourseDialog: React.FC<CreateCourseDialogProps> = ({ isOpenNewCourse
             sx={{
                 '& .MuiPaper-root': {
                     borderRadius: '24px',
-                    width: '328px',
+                    width: '500px',
                     height: 'auto',
-                    padding: '72px 108px',
+                    padding: '40px 32px',
                     gap: '40px',
                     background: '#FFFFFF'
                 },
@@ -44,7 +44,7 @@ const CreateCourseDialog: React.FC<CreateCourseDialogProps> = ({ isOpenNewCourse
             >
                 <CloseIcon />
             </IconButton>
-            <h3 style={{ margin: 0, display: 'flex', justifyContent: 'center' }}>Создание нового курса</h3>
+            <h3 style={{ margin: 0, display: 'flex', justifyContent: 'center' }}>Создать новый курс</h3>
             <InputForm
                 label=""
                 name="name"
