@@ -13,7 +13,6 @@ export interface Course {
   studentCount: number;
 }
 
-// Генерация цвета на основе ID курса
 export const generateColor = (id: string): string => {
   const colors = [
     '#1967D2', 
