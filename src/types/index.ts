@@ -8,3 +8,7 @@ export * from './Comment';
 export * from './Solution';
 export * from './Error';
 export * from './AuthApi';
+export * from './Auth';
+export * from './CreateCourse';
+export * from './JoinToCourse';
+export * from './Registration';

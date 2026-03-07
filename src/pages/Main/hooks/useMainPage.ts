@@ -1,10 +1,19 @@
-import { useState } from "react"
-import { CreateCourse } from "../../../types/CreateCourse"
-import { createCourse } from "../../../api/courses/createCourse";
-import { joinCourse } from "../../../api/courses/joinCourse";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { CreateCourse } from "../../../types/CreateCourse";
 import { JoinToCourse } from "../../../types/JoinToCourse";
+import { coursesService, joinCourse } from "../../../api/services";
+import { CourseDto } from "../../../types/api";
+import { getAuthToken } from "../../../api/client";
 
 export const useMainPage = () => {
+    const navigate = useNavigate();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [courses, setCourses] = useState<CourseDto[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
     const [createCourseForm, setCreateCourseForm] = useState<CreateCourse>({
         name: '',
         description: ''
@@ -17,6 +26,45 @@ export const useMainPage = () => {
 
     const [isOpenNewCourse, setIsOpenNewCourse] = useState<boolean>(false);
     const [isOpenJoinCourse, setIsOpenJoinCourse] = useState<boolean>(false);
+
+    useEffect(() => {
+        const token = getAuthToken();
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+        loadCourses();
+    }, []);
+
+    const loadCourses = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await coursesService.listMyCourses();
+            setCourses(response.content);
+        } catch (err: any) {
+            setError(err.message || 'Ошибка загрузки курсов');
+            console.error('Failed to load courses:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleMenuClick = () => {
+        if (window.innerWidth <= 768) {
+            setSidebarOpen(!sidebarOpen);
+        } else {
+            setSidebarCollapsed(!sidebarCollapsed);
+        }
+    };
+
+    const handleSidebarClose = () => {
+        setSidebarOpen(false);
+    };
+
+    const handleCourseClick = (courseId: string) => {
+        navigate(`/course/${courseId}`);
+    };
 
     const handleIsOpenNewCourse = (isOpen: boolean) => {
         setIsOpenNewCourse(isOpen);
@@ -55,7 +103,7 @@ export const useMainPage = () => {
         return Object.keys(e).length === 0;
     };
 
-    const validateJoiToCourseForm = (): boolean => {
+    const validateJoinToCourseForm = (): boolean => {
         const e: typeof errorsJoinToCourseForm = {};
 
         if (!joinToCourseForm?.code) {
@@ -79,36 +127,53 @@ export const useMainPage = () => {
     const createNewCourse = async () => {
         if (!validateCreateCourseForm()) return false;
         try {
-            const result = await createCourse(createCourseForm);
+            await coursesService.createCourse(createCourseForm);
+            setIsOpenNewCourse(false);
+            loadCourses();
         }
         catch (error: any) {
             console.error(error.message);
             alert(`Ошибка: ${error.message}`);
         }
-
     };
 
-    const joinToCourse = async () => {
-        if (!validateJoiToCourseForm()) return false;
+    const joinToCourseFunc = async () => {
+        if (!validateJoinToCourseForm()) return false;
         try {
-            const result = await joinCourse(joinToCourseForm);
+            await joinCourse(joinToCourseForm.code);
+            setIsOpenJoinCourse(false);
+            loadCourses();
         }
         catch (error: any) {
             console.error(error.message);
             alert(`Ошибка: ${error.message}`);
         }
-
     };
 
     return {
-        state: { createCourseForm, joinToCourseForm, errorsCreateCourseForm, errorsJoinToCourseForm, isOpenNewCourse, isOpenJoinCourse },
+        state: {
+            sidebarOpen,
+            sidebarCollapsed,
+            courses,
+            loading,
+            error,
+            createCourseForm,
+            joinToCourseForm,
+            errorsCreateCourseForm,
+            errorsJoinToCourseForm,
+            isOpenNewCourse,
+            isOpenJoinCourse
+        },
         functions: {
+            handleMenuClick,
+            handleSidebarClose,
+            handleCourseClick,
             handleIsOpenNewCourse,
             handleIsOpenJoinCourse,
             handleChangeCreateCourse,
             handleChangeJoinCourse,
             createNewCourse,
-            joinToCourse
+            joinToCourse: joinToCourseFunc
         }
-    }
-}
+    };
+};

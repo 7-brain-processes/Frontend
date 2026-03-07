@@ -45,7 +45,13 @@
   margin: 0;
 }
 
-.create-course-btn {
+.courses-header-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.create-course-btn,
+.join-course-btn {
   background-color: #1a73e8;
   color: white;
   border: none;
@@ -57,8 +63,19 @@
   transition: background-color 0.2s;
 }
 
-.create-course-btn:hover {
+.create-course-btn:hover,
+.join-course-btn:hover {
   background-color: #1557b0;
+}
+
+.join-course-btn {
+  background-color: #ffffff;
+  color: #1a73e8;
+  border: 1px solid #1a73e8;
+}
+
+.join-course-btn:hover {
+  background-color: #e8f0fe;
 }
 
 .loading, .error {
@@ -162,6 +179,17 @@
   min-height: 100px;
 }
 
+.form-group .error-text {
+  color: #d93025;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.form-group input.error,
+.form-group textarea.error {
+  border-color: #d93025;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -177,9 +205,6 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
-}
-
-.modal-actions button {
   background-color: transparent;
   color: #1a73e8;
 }
@@ -195,12 +220,6 @@
 
 .modal-actions button.primary:hover {
   background-color: #1557b0;
-}
-
-.courses-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 16px;
 }
 
 .courses-grid {
@@ -226,6 +245,12 @@
     grid-template-columns: 1fr;
     gap: 16px;
   }
+
+  .courses-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -235,6 +260,15 @@
 
   .courses-grid {
     gap: 12px;
+  }
+
+  .courses-header-buttons {
+    width: 100%;
+  }
+
+  .create-course-btn,
+  .join-course-btn {
+    flex: 1;
   }
 }
 
@@ -251,26 +285,4 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.courses-empty {
-  text-align: center;
-  padding: 48px 24px;
-  color: #5f6368;
-}
-
-.courses-empty-icon {
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.courses-empty-title {
-  font-size: 22px;
-  font-weight: 400;
-  margin: 0 0 8px 0;
-}
-
-.courses-empty-text {
-  font-size: 14px;
-  margin: 0;
 }

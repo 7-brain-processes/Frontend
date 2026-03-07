@@ -1,15 +1,15 @@
 const API_BASE_URL = '/api/v1';
 
 export const getAuthToken = (): string | null => {
-  return localStorage.getItem('authToken');
+  return localStorage.getItem('token');
 };
 
 export const setAuthToken = (token: string): void => {
-  localStorage.setItem('authToken', token);
+  localStorage.setItem('token', token);
 };
 
 export const removeAuthToken = (): void => {
-  localStorage.removeItem('authToken');
+  localStorage.removeItem('token');
 };
 
 export const apiRequest = async <T>(

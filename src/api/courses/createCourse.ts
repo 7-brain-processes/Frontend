@@ -1,16 +1,9 @@
-import { CreateCourse } from "../../types/CreateCourse";
-import { apiAuth } from "../api"
+import { apiRequest } from '../client';
+import { CreateCourseRequest, CourseDto } from '../../types';
 
-export const createCourse = async (createCourseForm: CreateCourse): Promise<any> => {
-    try {
-        const response = await apiAuth.post('/api/v1/courses', createCourseForm);
-        return response.data;
-    }
-    catch (error: any) {
-        if (error.response) {
-            const { status, data } = error.response;
-            throw new Error(`Ошибка при создании курса (${status}): ${JSON.stringify(data)}`);
-        }
-        throw new Error(error.message);
-    }
-}
+export const createCourse = (data: CreateCourseRequest): Promise<CourseDto> => {
+  return apiRequest<CourseDto>('/courses', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+};

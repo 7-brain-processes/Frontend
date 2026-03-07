@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Auth } from "../../../types/Auth"
-import { auth } from "../../../api/auth/auth";
+import { login as loginApi } from "../../../api/auth/login";
 import { useNavigate } from "react-router-dom";
 
 export const useAuthPage = () => {
@@ -36,7 +36,7 @@ export const useAuthPage = () => {
         if (!validateAuthForm()) return false;
 
         try {
-            const result = await auth(authForm);
+            const result = await loginApi(authForm);
             if (result) {
                 localStorage.setItem('token', result.token);
                 navigate('/main');

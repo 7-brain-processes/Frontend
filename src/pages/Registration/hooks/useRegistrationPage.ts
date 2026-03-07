@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Registration } from "../../../types/Registration";
 import { useNavigate } from "react-router-dom";
-import { register } from "../../../api/register/register";
+import { register } from "../../../api/auth/register";
 
 export const useRegistrationPage = () => {
     const navigate = useNavigate();
@@ -31,7 +31,7 @@ export const useRegistrationPage = () => {
         }
 
         if (!registrationForm?.displayName) {
-            return false;
+            e.displayName = 'Поле обязательно.';
         }
         else if (registrationForm.displayName.length > 100) {
             e.displayName = 'Неправильная валидация.';
