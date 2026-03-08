@@ -4,8 +4,8 @@ export interface CommentDto {
   id: string;
   text: string;
   author: UserDto;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CreateCommentRequest {

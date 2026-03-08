@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation } from "react-router-dom"
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom"
 import AuthPage from "../pages/Auth/AuthPage";
 import RegistrationPage from "../pages/Registration/RegistrationPage";
 import MainPage from "../pages/Main/MainPage";
@@ -12,6 +12,7 @@ import { mockCourses } from "../data/mockData";
 
 const Router = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -67,8 +68,10 @@ const Router = () => {
     };
 
     const handleCourseClick = (courseId: string) => {
+        navigate(`/course/${courseId}`);
         console.log('Course clicked:', courseId);
     };
+
     return (
         <div>
             {location.pathname !== '/login' && location.pathname !== '/' && location.pathname !== '/registration' && !localStorage.getItem('token') &&
@@ -88,7 +91,6 @@ const Router = () => {
                 <Route path="/registration" element={<RegistrationPage />} />
                 <Route path="/main" element={<MainPage />} />
                 <Route path="/course/:id" element={<CourseDetailPage />} />
-
             </Routes>
         </div>
     )
