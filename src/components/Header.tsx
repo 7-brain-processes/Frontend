@@ -36,36 +36,16 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         </div>
       </div>
       <div className="header-right">
-        <div className="profile-menu-container">
-          <button 
-            className="icon-button profile-button" 
-            data-testid="profile-button" 
-            aria-label="Профиль"
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-          >
-            <img 
-              src="https://via.placeholder.com/32/FF6B35/FFFFFF?text=У" 
-              alt="Профиль" 
-              className="profile-image"
-            />
-          </button>
-          {showProfileMenu && (
-            <>
-              <div 
-                className="profile-menu-overlay" 
-                onClick={() => setShowProfileMenu(false)}
-              />
-              <div className="profile-menu">
-                <button onClick={handleLogout} className="profile-menu-item">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-                  </svg>
-                  Выйти
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        <button 
+          className="icon-button" 
+          data-testid="logout-button" 
+          aria-label="Выйти"
+          onClick={handleLogout}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+          </svg>
+        </button>
       </div>
     </header>
   );

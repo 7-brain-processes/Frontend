@@ -44,10 +44,8 @@ export const useAuthPage = () => {
             }
         }
         catch (error: any) {
-            console.error('Login failed, using offline mode:', error.message);
-            localStorage.setItem('token', 'offline-mock-token');
-            alert('Работа в режиме без подключения к серверу');
-            navigate('/main');
+            console.error('Login failed:', error.message);
+            alert(error.message || 'Ошибка входа. Проверьте логин и пароль.');
         }
     };
 

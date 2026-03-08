@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import './AssignmentsTab.css';
 import { PostDto, CourseRole, SolutionDto, PostType, SolutionStatus } from '../../types/api';
 import { postsService, solutionsService } from '../../api/services';
-import { mockPosts, mockSolutions, getMySolution } from '../../data/mockData';
 
 interface AssignmentsTabProps {
   courseId: string;
@@ -38,10 +37,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       const response = await postsService.listPosts(courseId, { type: 'TASK' });
       setAssignments(response.content);
     } catch (err: any) {
-      console.error('Failed to load assignments, using mock data:', err);
-      const courseMockPosts = mockPosts[courseId] || [];
-      const mockAssignments = courseMockPosts.filter(p => p.type === 'TASK');
-      setAssignments(mockAssignments);
+      console.error('Failed to load assignments:', err);
+      setAssignments([]);
     } finally {
       setLoading(false);
     }
@@ -53,10 +50,14 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       setMySolution(solution);
       setSolutionText(solution.text || '');
     } catch (err: any) {
-      console.error('Failed to load my solution, using mock data:', err);
-      const mockSolution = getMySolution(postId);
-      setMySolution(mockSolution);
-      setSolutionText(mockSolution?.text || '');
+      if (err.message?.includes('404') || err.message?.includes('not found')) {
+        setMySolution(null);
+        setSolutionText('');
+      } else {
+        console.error('Failed to load my solution:', err);
+        setMySolution(null);
+        setSolutionText('');
+      }
     }
   };
 
@@ -68,9 +69,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       const response = await solutionsService.listSolutions(courseId, postId);
       setSolutions(response.content);
     } catch (err: any) {
-      console.error('Failed to load solutions, using mock data:', err);
-      const postMockSolutions = mockSolutions[postId] || [];
-      setSolutions(postMockSolutions);
+      console.error('Failed to load solutions:', err);
+      setSolutions([]);
     }
   };
 
@@ -549,9 +549,6 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                     {assignment.materialsCount > 0 && (
                       <span>📎 {assignment.materialsCount}</span>
                     )}
-                    {userRole === 'TEACHER' && (
-                      <span>✓ {assignment.solutionsCount} решений</span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -560,7 +557,6 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
         </div>
       )}
 
-      {/* Create/Edit Assignment Modal */}
       {showCreateAssignment && (
         <div className="modal-overlay" onClick={() => setShowCreateAssignment(false)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>

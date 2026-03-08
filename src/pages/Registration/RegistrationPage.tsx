@@ -7,10 +7,10 @@ const RegistrationPage = () => {
 
     return (
         <div style={{
-            position: 'relative',
-            top: 180,
+            minHeight: '100vh',
             display: 'flex',
             justifyContent: 'center',
+            alignItems: 'center',
         }}>
             <div style={{
                 display: 'flex',

@@ -183,7 +183,6 @@
   overflow-wrap: break-word;
 }
 
-/* Sidebar */
 .task-sidebar {
   background: white;
   border-radius: 12px;
@@ -347,6 +346,20 @@
   margin-bottom: 12px;
 }
 
+.solution-meta {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.solution-meta .grade-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1976d2;
+}
+
 .student-section,
 .teacher-section {
   padding: 24px;
@@ -389,6 +402,13 @@
 
 .btn-secondary:hover {
   background-color: #f1f3f4;
+}
+
+.btn-edit-grade {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .btn-small {
@@ -628,7 +648,6 @@
   margin-top: 12px;
 }
 
-/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -735,7 +754,6 @@
   color: #d93025;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .task-detail-page {
     padding: 16px;

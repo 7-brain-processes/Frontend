@@ -5,7 +5,6 @@ import { JoinToCourse } from "../../../types/JoinToCourse";
 import { coursesService, joinCourse } from "../../../api/services";
 import { CourseDto } from "../../../types/api";
 import { getAuthToken } from "../../../api/client";
-import { mockCourses } from "../../../data/mockData";
 
 export const useMainPage = () => {
     const navigate = useNavigate();
@@ -39,9 +38,9 @@ export const useMainPage = () => {
             const response = await coursesService.listMyCourses();
             setCourses(response.content);
         } catch (err: any) {
-            console.error('Failed to load courses, using mock data:', err);
-            setCourses(mockCourses);
-            setError('Работа в режиме без подключения к серверу');
+            console.error('Failed to load courses:', err);
+            setCourses([]);
+            setError(err.message || 'Ошибка загрузки курсов');
         } finally {
             setLoading(false);
         }

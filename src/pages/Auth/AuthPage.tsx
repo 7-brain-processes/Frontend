@@ -7,10 +7,10 @@ const AuthPage = () => {
 
     return (
         <div style={{
-            position: 'relative',
-            top: 220,
+            minHeight: '100vh',
             display: 'flex',
             justifyContent: 'center',
+            alignItems: 'center',
         }}>
             <div style={{
                 display: 'flex',
@@ -47,7 +47,7 @@ const AuthPage = () => {
                     width="100%"
                     dataTestId="password-input"
                 />
-                <div style={{ padding: '16px 0 0', display: 'flex', gap: '16px' }}>
+                <div style={{ padding: '16px 0 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <SubmitButton id="login-button" text='Войти' colorScheme="primary" width="100%" onClick={functions.login} />
                     <SubmitButton id="register-button" text='Зарегистрироваться' colorScheme="secondary" width="100%" onClick={functions.navigateToRegistration} />
                 </div>

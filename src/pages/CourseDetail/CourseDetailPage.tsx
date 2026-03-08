@@ -67,7 +67,6 @@ const CourseDetailPage = () => {
       )}
 
       <main className="main-content">
-        {/* Course Header with Banner */}
         <div className="course-header" style={{ backgroundColor: color }}>
           <div className="course-header-content">
             <h1 className="course-page-title" data-testid="course-page-title">{course.name}</h1>
@@ -105,7 +104,6 @@ const CourseDetailPage = () => {
           <div className="course-header-overlay"></div>
         </div>
 
-        {/* Course Tabs */}
         <div className="course-tabs" data-testid="course-tabs">
           <button
             className={`course-tab ${activeTab === 'stream' ? 'active' : ''}`}
@@ -130,7 +128,6 @@ const CourseDetailPage = () => {
           </button>
         </div>
 
-        {/* Course Content */}
         <div className="course-content">
           {activeTab === 'stream' && (
             <StreamTab courseId={course.id} userRole={userRole} />
@@ -146,7 +143,6 @@ const CourseDetailPage = () => {
         </div>
       </main>
 
-      {/* Edit Course Modal */}
       {showEditCourse && (
         <div className="modal-overlay" onClick={() => setShowEditCourse(false)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
@@ -194,7 +190,6 @@ const CourseDetailPage = () => {
         </div>
       )}
 
-      {/* Delete Course Confirmation */}
       {showDeleteConfirm && (
         <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>

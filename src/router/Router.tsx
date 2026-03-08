@@ -9,7 +9,6 @@ import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import { useState, useEffect } from "react";
 import { CourseDto } from "../types/api";
-import { mockCourses } from "../data/mockData";
 import { coursesService } from "../api/services";
 
 const Router = () => {
@@ -30,8 +29,8 @@ const Router = () => {
             const response = await coursesService.listMyCourses();
             setCourses(response.content);
         } catch (err: any) {
-            console.error('Failed to load courses in Router, using mock data:', err);
-            setCourses(mockCourses);
+            console.error('Failed to load courses in Router:', err);
+            setCourses([]);
         }
     };
 

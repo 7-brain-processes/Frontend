@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './PeopleTab.css';
 import { MemberDto, InviteDto, CourseRole } from '../../types/api';
 import { membersService, invitesService, coursesService } from '../../api/services';
-import { mockMembers } from '../../data/mockData';
 
 interface PeopleTabProps {
   courseId: string;
@@ -34,9 +33,8 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
       const response = await membersService.listMembers(courseId);
       setMembers(response.content);
     } catch (err: any) {
-      console.error('Failed to load members, using mock data:', err);
-      const courseMockMembers = mockMembers[courseId] || [];
-      setMembers(courseMockMembers);
+      console.error('Failed to load members:', err);
+      setMembers([]);
     } finally {
       setLoading(false);
     }
@@ -148,7 +146,6 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
 
   return (
     <div className="people-tab">
-      {/* Members Section */}
       <div className="members-section">
         <div className="section-header">
           <h2>Участники</h2>
@@ -216,7 +213,6 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
         )}
       </div>
 
-      {/* Invites Section (Teacher Only) */}
       {userRole === 'TEACHER' && (
         <div className="invites-section">
           <div className="section-header">
@@ -351,7 +347,6 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
         </div>
       )}
 
-      {/* Leave Course Button */}
       <div className="danger-zone">
         <h3>Опасная зона</h3>
         <p>После выхода из курса вам нужно будет получить новое приглашение для возвращения.</p>

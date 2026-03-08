@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PostDto, CourseRole, PostType } from '../../types/api';
+import { FileDto } from '../../types';
 import { postsService } from '../../api/services';
-import { mockPosts } from '../../data/mockData';
 import './StreamTab.css';
 import PublicCommentsDialog from '../../pages/PublicComments/PublicCommentsDialog';
 import { usePublicCommentsDialog } from '../../pages/PublicComments/hooks/usePublicCommentsDialog';
@@ -28,6 +28,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [expandedPost, setExpandedPost] = useState<string | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [postMaterials, setPostMaterials] = useState<Record<string, FileDto[]>>({});
+  const [loadingMaterialsPostId, setLoadingMaterialsPostId] = useState<string | null>(null);
 
   const toDateTimeLocal = (isoString: string | undefined | null): string => {
     if (!isoString) return '';
@@ -50,9 +52,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       const response = await postsService.listPosts(courseId);
       setPosts(response.content);
     } catch (err: any) {
-      console.error('Failed to load posts, using mock data:', err);
-      const courseMockPosts = mockPosts[courseId] || [];
-      setPosts(courseMockPosts);
+      console.error('Failed to load posts:', err);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -165,6 +166,47 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     }
   };
 
+  const handleToggleMaterials = async (postId: string) => {
+    if (expandedPost === postId) {
+      setExpandedPost(null);
+      return;
+    }
+
+    try {
+      setLoadingMaterialsPostId(postId);
+      const files = await postsService.listPostMaterials(courseId, postId);
+      setPostMaterials(prev => ({ ...prev, [postId]: files }));
+      setExpandedPost(postId);
+    } catch (err: any) {
+      console.error('Failed to load post materials:', err);
+      alert(err.message || 'Не удалось загрузить материалы');
+    } finally {
+      setLoadingMaterialsPostId(null);
+    }
+  };
+
+  const handleDownloadMaterial = async (
+    postId: string,
+    file: FileDto,
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    event.stopPropagation();
+    try {
+      const blob = await postsService.downloadPostMaterial(courseId, postId, file.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Failed to download material:', err);
+      alert(err.message || 'Не удалось скачать файл');
+    }
+  };
+
   return (
     <div className="stream-tab">
       {userRole === 'TEACHER' && (
@@ -182,7 +224,6 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
         </div>
       )}
 
-      {/* Posts List */}
       <div className="posts-list" data-testid="posts-list">
         {loading ? (
           <div className="loading-state">Загрузка постов...</div>
@@ -269,22 +310,56 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                     <span>Срок: {formatDate(post.deadline)}</span>
                   </div>
                 )}
+
+                {expandedPost === post.id && (
+                  <div className="post-materials">
+                    {loadingMaterialsPostId === post.id && !postMaterials[post.id] && (
+                      <div className="post-materials-status">Загрузка материалов...</div>
+                    )}
+                    {postMaterials[post.id] && postMaterials[post.id].length > 0 && (
+                      postMaterials[post.id].map(file => (
+                        <button
+                          key={file.id}
+                          type="button"
+                          className="post-material-item"
+                          onClick={event => handleDownloadMaterial(post.id, file, event)}
+                        >
+                          <span className="post-material-icon">📎</span>
+                          <span className="post-material-name">{file.originalName}</span>
+                        </button>
+                      ))
+                    )}
+                    {postMaterials[post.id] && postMaterials[post.id].length === 0 && (
+                      <div className="post-materials-status">Материалы не найдены</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="post-footer">
                 <div className="post-stats">
                   {post.materialsCount > 0 && (
-                    <span className="stat-item">
+                    <span
+                      className="stat-item stat-item-materials"
+                      onClick={event => {
+                        event.stopPropagation();
+                        handleToggleMaterials(post.id);
+                      }}
+                    >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
                       </svg>
                       {post.materialsCount}
                     </span>
                   )}
-                  <span className="stat-item" onClick={() => {
-                    setSelectedPostId(post.id);
-                    functions.handleIsOpenPublicComments(true);
-                  }}>
+                  <span
+                    className="stat-item stat-item-comments"
+                    onClick={event => {
+                      event.stopPropagation();
+                      setSelectedPostId(post.id);
+                      functions.handleIsOpenPublicComments(true);
+                    }}
+                  >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z" />
                     </svg>
@@ -305,7 +380,6 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
         )}
       </div>
 
-      {/* Create/Edit Post Modal */}
       {showCreatePost && (
         <div className="modal-overlay" onClick={() => setShowCreatePost(false)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
@@ -420,7 +494,6 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
         </div>
       )}
 
-      {/* Public Comments Dialog */}
       {selectedPostId && (
         <PublicCommentsDialog 
           isOpenPublicComments={state.isOpenPublicComments} 

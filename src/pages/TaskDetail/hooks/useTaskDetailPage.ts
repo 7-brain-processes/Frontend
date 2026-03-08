@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { postsService, solutionsService } from "../../../api/services";
-import { listSolutionFiles, downloadSolutionFile } from "../../../api/solutions";
+import { listSolutionFiles, downloadSolutionFile, deleteSolution } from "../../../api/solutions";
 import { PostDto, SolutionDto, CourseRole, FileDto } from "../../../types/api";
-import { mockPosts, mockSolutions, getMySolution } from "../../../data/mockData";
 
-export const useTaskDetailPage = (userRole: CourseRole) => {
+export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = false) => {
     const { courseId, taskId } = useParams<{ courseId: string; taskId: string }>();
     const navigate = useNavigate();
     
     const [task, setTask] = useState<PostDto | null>(null);
     const [solutions, setSolutions] = useState<SolutionDto[]>([]);
+    const [solutionFiles, setSolutionFiles] = useState<Record<string, FileDto[]>>({});
     const [mySolution, setMySolution] = useState<SolutionDto | null>(null);
     const [mySolutionFiles, setMySolutionFiles] = useState<FileDto[]>([]);
     const [showSubmitForm, setShowSubmitForm] = useState(false);
@@ -23,8 +23,10 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
     const [gradeValue, setGradeValue] = useState<number>(0);
 
     useEffect(() => {
-        loadTask();
-    }, [courseId, taskId]);
+        if (!loadingRole) {
+            loadTask();
+        }
+    }, [courseId, taskId, userRole, loadingRole]);
 
     const loadTask = async () => {
         if (!courseId || !taskId) return;
@@ -41,23 +43,8 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
                 await loadSolutions();
             }
         } catch (err: any) {
-            console.error('Failed to load task, using mock data:', err);
-            const allMockPosts = Object.values(mockPosts).flat();
-            const mockTask = allMockPosts.find(p => p.id === taskId);
-            if (mockTask) {
-                setTask(mockTask);
-                if (userRole === 'STUDENT') {
-                    const mockSol = getMySolution(taskId);
-                    setMySolution(mockSol);
-                    setSolutionText(mockSol?.text || '');
-                } else {
-                    const mockSols = mockSolutions[taskId] || [];
-                    setSolutions(mockSols);
-                }
-                setError('Работа в режиме без подключения к серверу');
-            } else {
-                setError(err.message || 'Ошибка загрузки задания');
-            }
+            console.error('Failed to load task:', err);
+            setError(err.message || 'Ошибка загрузки задания');
         } finally {
             setLoading(false);
         }
@@ -83,11 +70,17 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
                 setMySolutionFiles([]);
             }
         } catch (err: any) {
-            console.error('Failed to load my solution, using mock data:', err);
-            const mockSol = getMySolution(taskId);
-            setMySolution(mockSol);
-            setSolutionText(mockSol?.text || '');
-            setMySolutionFiles([]);
+            // 404 is normal when student hasn't submitted yet
+            if (err.message?.includes('404') || err.message?.includes('not found')) {
+                setMySolution(null);
+                setSolutionText('');
+                setMySolutionFiles([]);
+            } else {
+                console.error('Failed to load my solution:', err);
+                setMySolution(null);
+                setSolutionText('');
+                setMySolutionFiles([]);
+            }
         }
     };
 
@@ -97,10 +90,27 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
         try {
             const response = await solutionsService.listSolutions(courseId, taskId);
             setSolutions(response.content);
+            
+            // Load files for each solution
+            const filesMap: Record<string, FileDto[]> = {};
+            for (const solution of response.content) {
+                if (solution.filesCount > 0) {
+                    try {
+                        const files = await listSolutionFiles(courseId, taskId, solution.id);
+                        filesMap[solution.id] = files;
+                    } catch (err) {
+                        console.error(`Failed to load files for solution ${solution.id}:`, err);
+                        filesMap[solution.id] = [];
+                    }
+                } else {
+                    filesMap[solution.id] = [];
+                }
+            }
+            setSolutionFiles(filesMap);
         } catch (err: any) {
-            console.error('Failed to load solutions, using mock data:', err);
-            const mockSols = mockSolutions[taskId] || [];
-            setSolutions(mockSols);
+            console.error('Failed to load solutions:', err);
+            setSolutions([]);
+            setSolutionFiles({});
         }
     };
 
@@ -113,8 +123,10 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
         }
 
         try {
+            setLoading(true);
+            
             const newSolution = await solutionsService.createSolution(courseId, taskId, {
-                text: solutionText,
+                text: solutionText.trim() || ' ',
             });
 
             if (selectedFiles.length > 0) {
@@ -123,6 +135,7 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
                         await solutionsService.uploadSolutionFile(courseId, taskId, newSolution.id, file);
                     } catch (err) {
                         console.error('Failed to upload file:', err);
+                        throw new Error(`Ошибка загрузки файла ${file.name}`);
                     }
                 }
             }
@@ -134,6 +147,8 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
         } catch (err: any) {
             console.error('Failed to submit solution:', err);
             alert(err.message || 'Ошибка отправки решения');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -166,6 +181,26 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
         }
     };
 
+    const handleCancelSubmit = async () => {
+        if (!courseId || !taskId || !mySolution) return;
+
+        if (!window.confirm('Вы уверены, что хотите отменить отправку решения?')) {
+            return;
+        }
+
+        try {
+            await deleteSolution(courseId, taskId, mySolution.id);
+            setMySolution(null);
+            setMySolutionFiles([]);
+            setSolutionText('');
+            setSelectedFiles([]);
+            setShowSubmitForm(false);
+        } catch (err: any) {
+            console.error('Failed to delete solution:', err);
+            alert(err.message || 'Ошибка отмены отправки');
+        }
+    };
+
     const handleBack = () => {
         navigate(`/course/${courseId}`);
     };
@@ -193,6 +228,7 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
         state: {
             task,
             solutions,
+            solutionFiles,
             mySolution,
             mySolutionFiles,
             showSubmitForm,
@@ -214,12 +250,30 @@ export const useTaskDetailPage = (userRole: CourseRole) => {
             handleOpenGradeModal,
             handleGradeSolution,
             handleFileSelect,
+            handleCancelSubmit,
             handleBack,
             formatDeadline,
             handleDownloadFile: async (fileId: string, fileName: string) => {
                 if (!courseId || !taskId || !mySolution) return;
                 try {
                     const blob = await downloadSolutionFile(courseId, taskId, mySolution.id, fileId);
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (err) {
+                    console.error('Failed to download file:', err);
+                    alert('Ошибка при скачивании файла');
+                }
+            },
+            handleDownloadSolutionFile: async (solutionId: string, fileId: string, fileName: string) => {
+                if (!courseId || !taskId) return;
+                try {
+                    const blob = await downloadSolutionFile(courseId, taskId, solutionId, fileId);
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;

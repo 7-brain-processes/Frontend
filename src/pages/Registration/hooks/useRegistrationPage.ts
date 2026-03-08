@@ -58,10 +58,8 @@ export const useRegistrationPage = () => {
             }
         }
         catch (error: any) {
-            console.error('Registration failed, using offline mode:', error.message);
-            localStorage.setItem('token', 'offline-mock-token');
-            alert('Работа в режиме без подключения к серверу');
-            navigate('/main');
+            console.error('Registration failed:', error.message);
+            alert(error.message || 'Ошибка регистрации. Проверьте данные.');
         }
     };
 

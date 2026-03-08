@@ -33,7 +33,6 @@
   height: 20px;
 }
 
-/* Posts List */
 .posts-list {
   display: flex;
   flex-direction: column;
@@ -137,6 +136,8 @@
   color: #5f6368;
   line-height: 1.6;
   white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
   margin-bottom: 12px;
 }
 
@@ -190,7 +191,67 @@
   fill: #188F58;
 }
 
-/* Empty State */
+.stat-item-materials {
+  cursor: pointer;
+}
+
+.stat-item-materials:hover {
+  color: #1967d2;
+}
+
+.stat-item-materials:hover svg {
+  fill: #1967d2;
+}
+
+.stat-item-comments {
+  cursor: pointer;
+}
+
+.stat-item-comments:hover {
+  color: #1967d2;
+}
+
+.stat-item-comments:hover svg {
+  fill: #1967d2;
+}
+
+.post-materials {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.post-material-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f1f3f4;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #3c4043;
+  text-align: left;
+}
+
+.post-material-item:hover {
+  background: #e8eaed;
+}
+
+.post-material-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-materials-status {
+  font-size: 13px;
+  color: #5f6368;
+}
+
 .empty-state {
   background: white;
   border: 1px solid #dadce0;
@@ -219,7 +280,6 @@
   line-height: 1.5;
 }
 
-/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -241,7 +301,6 @@
   width: 90%;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .post-card {
     padding: 16px;
@@ -256,7 +315,6 @@
   }
 }
 
-/* Post Actions (Teacher) */
 .post-header-right {
   display: flex;
   align-items: center;
@@ -286,7 +344,6 @@
   background: #f1f3f4;
 }
 
-/* Form Elements */
 select {
   width: 100%;
   padding: 10px 12px;
@@ -305,7 +362,6 @@ select:focus {
   border-color: #1967d2;
 }
 
-/* File Upload */
 .file-upload {
   margin-bottom: 12px;
 }

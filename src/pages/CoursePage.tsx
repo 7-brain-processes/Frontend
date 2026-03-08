@@ -147,7 +147,6 @@ const CoursePage: React.FC = () => {
         onCourseClick={handleCourseClick}
       />
       <main className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        {/* Course Header with Banner */}
         <div className="course-header" style={{ backgroundColor: color }}>
           <div className="course-header-content">
             <h1 className="course-page-title" data-testid="course-page-title">{course.name}</h1>
@@ -185,7 +184,6 @@ const CoursePage: React.FC = () => {
           <div className="course-header-overlay"></div>
         </div>
 
-        {/* Course Tabs */}
         <div className="course-tabs" data-testid="course-tabs">
           <button
             className={`course-tab ${activeTab === 'stream' ? 'active' : ''}`}
@@ -210,7 +208,6 @@ const CoursePage: React.FC = () => {
           </button>
         </div>
 
-        {/* Course Content */}
         <div className="course-content">
           {activeTab === 'stream' && (
             <StreamTab courseId={course.id} userRole={userRole} />
@@ -226,7 +223,6 @@ const CoursePage: React.FC = () => {
         </div>
       </main>
 
-      {/* Edit Course Modal */}
       {showEditCourse && (
         <div className="modal-overlay" onClick={() => setShowEditCourse(false)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
@@ -274,7 +270,6 @@ const CoursePage: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Course Confirmation */}
       {showDeleteConfirm && (
         <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>

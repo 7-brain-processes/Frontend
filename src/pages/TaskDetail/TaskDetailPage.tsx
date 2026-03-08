@@ -26,7 +26,7 @@ const TaskDetailPage = () => {
     loadCourse();
   }, [courseId]);
   
-  const { state, functions } = useTaskDetailPage(userRole);
+  const { state, functions } = useTaskDetailPage(userRole, loadingRole);
 
   if (loadingRole || state.loading) {
     return (
@@ -79,7 +79,6 @@ const TaskDetailPage = () => {
             </div>
 
             <div className="task-info-row">
-              <div className="task-points">5 баллов</div>
               {deadline && (
                 <div className="task-deadline">
                   Срок сдачи: {deadline.text}
@@ -96,7 +95,6 @@ const TaskDetailPage = () => {
           </div>
         </div>
 
-        {/* Right Sidebar */}
         {userRole === 'STUDENT' && (
           <div className="task-sidebar">
             <div className="sidebar-card">
@@ -142,7 +140,7 @@ const TaskDetailPage = () => {
                   )}
                   <button 
                     className="btn-cancel-submit"
-                    onClick={() => functions.setShowSubmitForm(true)}
+                    onClick={functions.handleCancelSubmit}
                   >
                     Отменить отправку
                   </button>
@@ -185,14 +183,16 @@ const TaskDetailPage = () => {
                       <button 
                         className="btn-cancel"
                         onClick={() => functions.setShowSubmitForm(false)}
+                        disabled={state.loading}
                       >
                         Отмена
                       </button>
                       <button 
                         className="btn-submit"
                         onClick={functions.handleSubmitSolution}
+                        disabled={state.loading}
                       >
-                        Сдать
+                        {state.loading ? 'Отправка...' : 'Сдать'}
                       </button>
                     </div>
                   </div>
@@ -211,7 +211,6 @@ const TaskDetailPage = () => {
           </div>
         )}
 
-        {/* Teacher View */}
         {userRole === 'TEACHER' && (
           <div className="teacher-section">
             <h3>Решения студентов ({state.solutions.length})</h3>
@@ -240,38 +239,43 @@ const TaskDetailPage = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="solution-actions">
-                        {solution.grade !== null ? (
-                          <div className="grade-display">
-                            <span className="grade-value">{solution.grade}</span>
-                            <button 
-                              className="btn-small"
-                              onClick={() => functions.handleOpenGradeModal(solution)}
-                            >
-                              Изменить
-                            </button>
-                          </div>
-                        ) : (
-                          <button 
-                            className="btn-primary"
-                            onClick={() => functions.handleOpenGradeModal(solution)}
-                          >
-                            Оценить
-                          </button>
-                        )}
-                      </div>
                     </div>
-                    <div className="solution-text">
-                      <p>{solution.text}</p>
-                    </div>
-                    {solution.filesCount > 0 && (
-                      <div className="solution-files">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                          <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
-                        </svg>
-                        <span>{solution.filesCount} файлов</span>
+                    {solution.text && (
+                      <div className="solution-text">
+                        <p>{solution.text}</p>
                       </div>
                     )}
+                    {solution.filesCount > 0 && state.solutionFiles[solution.id] && state.solutionFiles[solution.id].length > 0 && (
+                      <div className="solution-files-list">
+                        {state.solutionFiles[solution.id].map((file) => (
+                          <div 
+                            key={file.id} 
+                            className="solution-file-item"
+                            onClick={() => functions.handleDownloadSolutionFile(solution.id, file.id, file.originalName)}
+                          >
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                            </svg>
+                            <span className="file-name">{file.originalName}</span>
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" className="download-icon">
+                              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                            </svg>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="solution-meta">
+                      {solution.grade !== null && (
+                        <span className="grade-value">{solution.grade}</span>
+                      )}
+                      <button 
+                        className="btn-secondary btn-edit-grade"
+                        onClick={() => functions.handleOpenGradeModal(solution)}
+                      >
+                        {solution.grade !== null ? 'Изменить' : 'Оценить'}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -280,7 +284,6 @@ const TaskDetailPage = () => {
         )}
       </div>
 
-      {/* Grade Modal */}
       {state.showGradeModal && state.selectedSolution && (
         <div className="modal-overlay" onClick={() => functions.setShowGradeModal(false)}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>

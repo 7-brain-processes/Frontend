@@ -11,7 +11,6 @@
   color: #3c4043;
 }
 
-/* Assignments List */
 .assignments-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -101,7 +100,6 @@
   color: #5f6368;
 }
 
-/* Assignment Detail */
 .assignment-detail {
   display: flex;
   flex-direction: column;
@@ -183,7 +181,6 @@
   margin: 0 0 16px 0;
 }
 
-/* Student Section */
 .student-section {
   background: white;
   border: 1px solid #dadce0;
@@ -292,7 +289,6 @@
   background: #1557B0;
 }
 
-/* Submit Form */
 .submit-form {
   display: flex;
   flex-direction: column;
@@ -420,7 +416,6 @@
   cursor: not-allowed;
 }
 
-/* Teacher Section */
 .teacher-section {
   background: white;
   border: 1px solid #dadce0;
@@ -552,7 +547,6 @@
   background: #1557B0;
 }
 
-/* Empty State */
 .empty-state {
   background: white;
   border: 1px solid #dadce0;
@@ -586,7 +580,6 @@
   font-style: italic;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .assignments-list {
     grid-template-columns: 1fr;
@@ -607,7 +600,6 @@
   }
 }
 
-/* Teacher Controls */
 .assignments-header {
   display: flex;
   justify-content: space-between;
@@ -668,7 +660,6 @@
   background: #f1f3f4;
 }
 
-/* Modal Overrides (if not already in global CSS) */
 .modal-overlay {
   position: fixed;
   top: 0;

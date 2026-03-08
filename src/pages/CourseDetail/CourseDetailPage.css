@@ -1,4 +1,3 @@
-/* Main Content */
 .main-content {
   margin-left: 280px;
   min-height: calc(100vh - 64px);
@@ -20,7 +19,6 @@
   }
 }
 
-/* Course Header with Banner */
 .course-header {
   position: relative;
   height: 240px;
@@ -73,7 +71,6 @@
   pointer-events: none;
 }
 
-/* Course Tabs */
 .course-tabs {
   display: flex;
   gap: 0;
@@ -118,14 +115,12 @@
   background: #1967D2;
 }
 
-/* Course Content */
 .course-content {
   padding: 24px 32px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-/* Stream Layout */
 .stream-layout {
   display: grid;
   grid-template-columns: 1fr 300px;
@@ -141,7 +136,6 @@
   order: 1;
 }
 
-/* Upcoming Section */
 .upcoming-card {
   background: white;
   border: 1px solid #dadce0;
@@ -180,7 +174,6 @@
   background: #E8F0FE;
 }
 
-/* New Announcement Button */
 .new-announcement-button {
   width: 100%;
   display: flex;
@@ -206,7 +199,6 @@
   color: #5f6368;
 }
 
-/* Empty State */
 .empty-state {
   background: white;
   border: 1px solid #dadce0;
@@ -235,7 +227,6 @@
   line-height: 1.5;
 }
 
-/* Assignments and People Content */
 .assignments-content,
 .people-content {
   background: white;
@@ -244,7 +235,6 @@
   padding: 32px;
 }
 
-/* Responsive Design */
 @media (max-width: 968px) {
   .stream-layout {
     grid-template-columns: 1fr;
@@ -317,7 +307,6 @@
   }
 }
 
-/* Course Header Actions (Teacher) */
 .course-header-actions {
   position: absolute;
   top: 16px;
@@ -382,7 +371,6 @@
   background: #fce8e6;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -458,7 +446,6 @@
   gap: 12px;
 }
 
-/* Form Elements */
 .form-group {
   margin-bottom: 20px;
 }
