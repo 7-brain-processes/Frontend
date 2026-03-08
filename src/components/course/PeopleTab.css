@@ -1,0 +1,418 @@
+.people-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  font-size: 24px;
+  font-weight: 400;
+  margin: 0;
+  color: #3c4043;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-buttons button {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #dadce0;
+  border-radius: 20px;
+  color: #5f6368;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-buttons button:hover {
+  background: #f8f9fa;
+}
+
+.filter-buttons button.active {
+  background: #E8F0FE;
+  border-color: #1967D2;
+  color: #1967D2;
+}
+
+.members-section {
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.member-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e8eaed;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.member-card:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.member-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #1967D2;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.member-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #3c4043;
+}
+
+.member-username {
+  font-size: 14px;
+  color: #5f6368;
+}
+
+.member-joined {
+  font-size: 13px;
+  color: #80868b;
+}
+
+.member-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.role-badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.role-badge.teacher {
+  background: #E8F0FE;
+  color: #1967D2;
+}
+
+.role-badge.student {
+  background: #FEF7E0;
+  color: #E37400;
+}
+
+.remove-button {
+  padding: 6px;
+  background: transparent;
+  border: none;
+  color: #5f6368;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.remove-button:hover {
+  background: #FCE8E6;
+  color: #D93025;
+}
+
+.invites-section {
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.create-invite-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #1967D2;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.create-invite-button:hover {
+  background: #1557B0;
+}
+
+.create-invite-form {
+  background: #f8f9fa;
+  border: 1px solid #e8eaed;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.create-invite-form h3 {
+  font-size: 18px;
+  font-weight: 400;
+  margin: 0 0 20px 0;
+  color: #3c4043;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #3c4043;
+  margin-bottom: 8px;
+}
+
+.form-group select,
+.form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: #1967D2;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.cancel-button {
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  color: #5f6368;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover {
+  background: #f8f9fa;
+}
+
+.submit-button {
+  padding: 10px 24px;
+  background: #1967D2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.submit-button:hover {
+  background: #1557B0;
+}
+
+.invites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.invite-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e8eaed;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.invite-card.inactive {
+  opacity: 0.6;
+  background: #f1f3f4;
+}
+
+.invite-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invite-code {
+  font-size: 15px;
+  color: #3c4043;
+}
+
+.invite-code strong {
+  font-weight: 500;
+}
+
+.invite-details {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #5f6368;
+  flex-wrap: wrap;
+}
+
+.invite-status {
+  font-size: 13px;
+  color: #5f6368;
+  font-style: italic;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.copy-button,
+.delete-button {
+  padding: 8px;
+  background: transparent;
+  border: none;
+  color: #5f6368;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background: #E8F0FE;
+  color: #1967D2;
+}
+
+.delete-button:hover {
+  background: #FCE8E6;
+  color: #D93025;
+}
+
+.empty-state,
+.empty-invites {
+  padding: 32px 24px;
+  text-align: center;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.danger-zone {
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.danger-zone h3 {
+  font-size: 18px;
+  font-weight: 400;
+  margin: 0 0 12px 0;
+  color: #D93025;
+}
+
+.danger-zone p {
+  font-size: 14px;
+  color: #5f6368;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.leave-course-button {
+  padding: 10px 24px;
+  background: transparent;
+  border: 2px solid #D93025;
+  border-radius: 4px;
+  color: #D93025;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.leave-course-button:hover {
+  background: #D93025;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .filter-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .filter-buttons button {
+    flex: 1;
+    text-align: center;
+  }
+
+  .member-card {
+    flex-wrap: wrap;
+  }
+
+  .member-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .invite-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .invite-actions {
+    align-self: flex-end;
+  }
+}
