@@ -16,14 +16,17 @@ interface PublicCommentsDialogProps {
     createCommentForm: CreateCommentRequest;
     handleChangeCreateComment: (e: React.ChangeEvent<HTMLInputElement>) => void;
     errorsCreateCommentForm: Partial<Record<keyof CreateCommentRequest, string>>;
-    createPublicComment: (courseId: string, postId: string) => void;
+    createPublicComment: (courseId: string, postId: string) => Promise<boolean>;
+    onCommentCreated?: () => void;
 }
 
-const PublicCommentsDialog: React.FC<PublicCommentsDialogProps> = ({ isOpenPublicComments, handleIsOpenPublicComments, getPublicComments, courseId, postId, publicComments, createCommentForm, handleChangeCreateComment, errorsCreateCommentForm, createPublicComment }) => {
+const PublicCommentsDialog: React.FC<PublicCommentsDialogProps> = ({ isOpenPublicComments, handleIsOpenPublicComments, getPublicComments, courseId, postId, publicComments, createCommentForm, handleChangeCreateComment, errorsCreateCommentForm, createPublicComment, onCommentCreated }) => {
 
     useEffect(() => {
-        getPublicComments(courseId, postId);
-    }, [isOpenPublicComments]);
+        if (isOpenPublicComments && courseId && postId) {
+            getPublicComments(courseId, postId);
+        }
+    }, [isOpenPublicComments, courseId, postId]);
 
     return (
         <Dialog
@@ -79,7 +82,12 @@ const PublicCommentsDialog: React.FC<PublicCommentsDialogProps> = ({ isOpenPubli
                     width="100%"
                     dataTestId="description-input"
                 />
-                <SendIcon style={{ cursor: 'pointer' }} onClick={() => createPublicComment(courseId, postId)} />
+                <SendIcon style={{ cursor: 'pointer' }} onClick={async () => {
+                    const success = await createPublicComment(courseId, postId);
+                    if (success && onCommentCreated) {
+                        onCommentCreated();
+                    }
+                }} />
             </div>
         </Dialog>
     );

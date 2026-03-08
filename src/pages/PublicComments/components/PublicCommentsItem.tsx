@@ -1,3 +1,4 @@
+import React from 'react';
 import { CommentDto } from "../../../types";
 
 interface PublicCommentsItemProps {

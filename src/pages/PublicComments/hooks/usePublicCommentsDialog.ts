@@ -16,6 +16,9 @@ export const usePublicCommentsDialog = () => {
             text: ''
         });
         setErrorsCreateCommentForm({});
+        if (!isOpen) {
+            setPublicComments([]);
+        }
     }
 
     const handleChangeCreateComment = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,19 +53,23 @@ export const usePublicCommentsDialog = () => {
         }
     }
 
-    const createPublicComment = async (courseId: string, postId: string) => {
+    const createPublicComment = async (courseId: string, postId: string): Promise<boolean> => {
         if (!validateCreateCommentForm()) return false;
 
         try {
             const result = await postsService.createPostComment(courseId, postId, createCommentForm);
 
             if (result) {
-                getPublicComments(courseId, postId);
+                await getPublicComments(courseId, postId);
+                setCreateCommentForm({ text: '' });
+                return true;
             }
+            return false;
         }
         catch (error: any) {
             console.error(error.message);
             alert(`Ошибка: ${error.message}`);
+            return false;
         }
     }
 
