@@ -4,3 +4,4 @@ build
 .gitignore
 *.md
 cypress
+.env
