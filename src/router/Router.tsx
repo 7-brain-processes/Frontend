@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation } from "react-router-dom"
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom"
 import AuthPage from "../pages/Auth/AuthPage";
 import RegistrationPage from "../pages/Registration/RegistrationPage";
 import MainPage from "../pages/Main/MainPage";
@@ -11,7 +11,6 @@ import { useState, useEffect } from "react";
 import { CourseDto } from "../types/api";
 import { mockCourses } from "../data/mockData";
 import { coursesService } from "../api/services";
-import { useNavigate } from "react-router-dom";
 
 const Router = () => {
     const location = useLocation();
@@ -52,6 +51,7 @@ const Router = () => {
         navigate(`/course/${courseId}`);
         handleSidebarClose();
     };
+
     return (
         <div>
             {location.pathname !== '/login' && location.pathname !== '/' && location.pathname !== '/registration' && localStorage.getItem('token') &&
@@ -72,7 +72,6 @@ const Router = () => {
                 <Route path="/main" element={<MainPage />} />
                 <Route path="/course/:id" element={<CourseDetailPage />} />
                 <Route path="/course/:courseId/task/:taskId" element={<TaskDetailPage />} />
-
             </Routes>
         </div>
     )

@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                     navigate('/main');
                   }
                   if (item.id === 'courses') {
-                    navigate('/courses');
+                    navigate('/main');
                   }
                   if (item.id === 'assignments') {
                     navigate('/assignments');
