@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './AssignmentsTab.css';
 import { PostDto, CourseRole, SolutionDto, PostType, SolutionStatus } from '../../types/api';
 import { postsService, solutionsService } from '../../api/services';
@@ -10,6 +11,7 @@ interface AssignmentsTabProps {
 }
 
 export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabProps) {
+  const navigate = useNavigate();
   const [assignments, setAssignments] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<PostDto | null>(null);
@@ -212,12 +214,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   };
 
   const openAssignment = (assignment: PostDto) => {
-    setSelectedAssignment(assignment);
-    if (userRole === 'STUDENT') {
-      loadMySolution(assignment.id);
-    } else {
-      loadSolutions(assignment.id);
-    }
+    navigate(`/course/${courseId}/task/${assignment.id}`);
   };
 
   const closeAssignment = () => {

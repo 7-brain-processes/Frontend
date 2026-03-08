@@ -2,15 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { coursesService } from "../../../api/services";
 import { CourseDto, UpdateCourseRequest } from "../../../types/api";
-import { getAuthToken } from "../../../api/client";
 import { mockCourses } from "../../../data/mockData";
 
 export const useCourseDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [activeTab, setActiveTab] = useState<'stream' | 'assignments' | 'people'>('stream');
     const [showCourseMenu, setShowCourseMenu] = useState(false);
     const [showEditCourse, setShowEditCourse] = useState(false);
@@ -19,13 +16,11 @@ export const useCourseDetailPage = () => {
     const [editDescription, setEditDescription] = useState('');
     
     const [course, setCourse] = useState<CourseDto | null>(null);
-    const [allCourses, setAllCourses] = useState<CourseDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         loadCourse();
-        loadAllCourses();
     }, [id]);
 
     const loadCourse = async () => {
@@ -48,32 +43,6 @@ export const useCourseDetailPage = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const loadAllCourses = async () => {
-        try {
-            const response = await coursesService.listMyCourses();
-            setAllCourses(response.content);
-        } catch (err: any) {
-            console.error('Failed to load courses, using mock data:', err);
-            setAllCourses(mockCourses);
-        }
-    };
-
-    const handleMenuClick = () => {
-        if (window.innerWidth <= 768) {
-            setSidebarOpen(!sidebarOpen);
-        } else {
-            setSidebarCollapsed(!sidebarCollapsed);
-        }
-    };
-
-    const handleSidebarClose = () => {
-        setSidebarOpen(false);
-    };
-
-    const handleCourseClick = (clickedCourseId: string) => {
-        navigate(`/course/${clickedCourseId}`);
     };
 
     const handleEditCourse = () => {
@@ -121,8 +90,6 @@ export const useCourseDetailPage = () => {
     return {
         state: {
             id,
-            sidebarOpen,
-            sidebarCollapsed,
             activeTab,
             showCourseMenu,
             showEditCourse,
@@ -130,22 +97,16 @@ export const useCourseDetailPage = () => {
             editName,
             editDescription,
             course,
-            allCourses,
             loading,
             error,
         },
         functions: {
-            setSidebarOpen,
-            setSidebarCollapsed,
             setActiveTab,
             setShowCourseMenu,
             setShowEditCourse,
             setShowDeleteConfirm,
             setEditName,
             setEditDescription,
-            handleMenuClick,
-            handleSidebarClose,
-            handleCourseClick,
             handleEditCourse,
             handleSaveEdit,
             handleDeleteCourse,

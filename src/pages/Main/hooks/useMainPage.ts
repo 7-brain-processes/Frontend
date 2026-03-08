@@ -40,7 +40,6 @@ export const useMainPage = () => {
             setCourses(response.content);
         } catch (err: any) {
             console.error('Failed to load courses, using mock data:', err);
-            // Используем mock данные при ошибке
             setCourses(mockCourses);
             setError('Работа в режиме без подключения к серверу');
         } finally {

@@ -279,6 +279,5 @@ export const mockMembers: Record<string, MemberDto[]> = {
 
 export const getMySolution = (postId: string): SolutionDto | null => {
   const solutions = mockSolutions[postId] || [];
-  // Возвращаем первое решение как "моё"
   return solutions.length > 0 ? solutions[0] : null;
 };

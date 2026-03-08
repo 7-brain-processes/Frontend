@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PostDto, CourseRole, PostType } from '../../types/api';
 import { postsService } from '../../api/services';
 import { mockPosts } from '../../data/mockData';
@@ -10,6 +11,7 @@ interface StreamTabProps {
 }
 
 const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -153,9 +155,14 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     return type === 'MATERIAL' ? 'Материал' : 'Задание';
   };
 
+  const handlePostClick = (post: PostDto) => {
+    if (post.type === 'TASK') {
+      navigate(`/course/${courseId}/task/${post.id}`);
+    }
+  };
+
   return (
     <div className="stream-tab">
-      {/* Create Post Button (Teacher only) */}
       {userRole === 'TEACHER' && (
         <div className="stream-actions">
           <button 
@@ -190,7 +197,12 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           </div>
         ) : (
           posts.map(post => (
-            <div key={post.id} className="post-card" data-testid="post-item">
+            <div 
+              key={post.id} 
+              className={`post-card ${post.type === 'TASK' ? 'clickable' : ''}`}
+              onClick={() => handlePostClick(post)}
+              data-testid="post-item"
+            >
               <div className="post-header">
                 <div className="post-author">
                   <div className="author-avatar">
@@ -209,7 +221,10 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                     <div className="post-actions">
                       <button 
                         className="icon-button"
-                        onClick={() => handleEditPost(post)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditPost(post);
+                        }}
                         title="Редактировать"
                         data-testid="edit-post-button"
                       >
@@ -219,7 +234,10 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                       </button>
                       <button 
                         className="icon-button"
-                        onClick={() => handleDeletePost(post.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePost(post.id);
+                        }}
                         title="Удалить"
                         data-testid="delete-post-button"
                       >

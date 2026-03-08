@@ -1,5 +1,3 @@
-import Header from '../../components/Header';
-import Sidebar from '../../components/Sidebar';
 import StreamTab from '../../components/course/StreamTab';
 import AssignmentsTab from '../../components/course/AssignmentsTab';
 import PeopleTab from '../../components/course/PeopleTab';
@@ -10,8 +8,6 @@ import './CourseDetailPage.css';
 const CourseDetailPage = () => {
   const { state, functions } = useCourseDetailPage();
   const {
-    sidebarOpen,
-    sidebarCollapsed,
     activeTab,
     showCourseMenu,
     showEditCourse,
@@ -19,7 +15,6 @@ const CourseDetailPage = () => {
     editName,
     editDescription,
     course,
-    allCourses,
     loading,
     error,
   } = state;
@@ -31,9 +26,6 @@ const CourseDetailPage = () => {
     setShowDeleteConfirm,
     setEditName,
     setEditDescription,
-    handleMenuClick,
-    handleSidebarClose,
-    handleCourseClick,
     handleEditCourse,
     handleSaveEdit,
     handleDeleteCourse,
@@ -43,7 +35,6 @@ const CourseDetailPage = () => {
   if (loading) {
     return (
       <div className="courses-page">
-        <Header onMenuClick={() => {}} />
         <div className="loading">Загрузка курса...</div>
       </div>
     );
@@ -52,7 +43,6 @@ const CourseDetailPage = () => {
   if (!course) {
     return (
       <div className="courses-page">
-        <Header onMenuClick={() => {}} />
         <div className="error">{error || 'Курс не найден'}</div>
       </div>
     );
@@ -76,7 +66,7 @@ const CourseDetailPage = () => {
         </div>
       )}
 
-      <main className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <main className="main-content">
         {/* Course Header with Banner */}
         <div className="course-header" style={{ backgroundColor: color }}>
           <div className="course-header-content">

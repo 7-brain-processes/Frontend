@@ -45,7 +45,6 @@ export const useAuthPage = () => {
         }
         catch (error: any) {
             console.error('Login failed, using offline mode:', error.message);
-            // Offline mode: set mock token and navigate
             localStorage.setItem('token', 'offline-mock-token');
             alert('Работа в режиме без подключения к серверу');
             navigate('/main');
