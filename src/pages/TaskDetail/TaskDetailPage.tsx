@@ -9,7 +9,7 @@ const TaskDetailPage = () => {
   const { courseId, taskId } = useParams<{ courseId: string; taskId: string }>();
   const [userRole, setUserRole] = useState<CourseRole>('STUDENT');
   const [loadingRole, setLoadingRole] = useState(true);
-  
+
   useEffect(() => {
     const loadCourse = async () => {
       if (!courseId) return;
@@ -22,10 +22,10 @@ const TaskDetailPage = () => {
         setLoadingRole(false);
       }
     };
-    
+
     loadCourse();
   }, [courseId]);
-  
+
   const { state, functions } = useTaskDetailPage(userRole, loadingRole);
 
   if (loadingRole || state.loading) {
@@ -60,7 +60,7 @@ const TaskDetailPage = () => {
             <div className="task-header">
               <div className="task-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
                 </svg>
               </div>
               <div className="task-header-info">
@@ -116,17 +116,17 @@ const TaskDetailPage = () => {
                     {state.mySolutionFiles.length > 0 && (
                       <div className="solution-files-list">
                         {state.mySolutionFiles.map((file) => (
-                          <div 
-                            key={file.id} 
+                          <div
+                            key={file.id}
                             className="solution-file-item"
                             onClick={() => functions.handleDownloadFile(file.id, file.originalName)}
                           >
                             <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
                             </svg>
                             <span className="file-name">{file.originalName}</span>
                             <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" className="download-icon">
-                              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
                             </svg>
                           </div>
                         ))}
@@ -138,7 +138,7 @@ const TaskDetailPage = () => {
                       Оценка: {state.mySolution.grade} / 100
                     </div>
                   )}
-                  <button 
+                  <button
                     className="btn-cancel-submit"
                     onClick={functions.handleCancelSubmit}
                   >
@@ -165,7 +165,7 @@ const TaskDetailPage = () => {
                       />
                       <label htmlFor="solution-files" className="btn-file">
                         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                          <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
+                          <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" />
                         </svg>
                         Добавить
                       </label>
@@ -180,14 +180,14 @@ const TaskDetailPage = () => {
                       </div>
                     )}
                     <div className="form-actions">
-                      <button 
+                      <button
                         className="btn-cancel"
                         onClick={() => functions.setShowSubmitForm(false)}
                         disabled={state.loading}
                       >
                         Отмена
                       </button>
-                      <button 
+                      <button
                         className="btn-submit"
                         onClick={functions.handleSubmitSolution}
                         disabled={state.loading}
@@ -199,7 +199,7 @@ const TaskDetailPage = () => {
                 </div>
               ) : (
                 <div className="sidebar-content">
-                  <button 
+                  <button
                     className="btn-add-work"
                     onClick={() => functions.setShowSubmitForm(true)}
                   >
@@ -248,17 +248,17 @@ const TaskDetailPage = () => {
                     {solution.filesCount > 0 && state.solutionFiles[solution.id] && state.solutionFiles[solution.id].length > 0 && (
                       <div className="solution-files-list">
                         {state.solutionFiles[solution.id].map((file) => (
-                          <div 
-                            key={file.id} 
+                          <div
+                            key={file.id}
                             className="solution-file-item"
                             onClick={() => functions.handleDownloadSolutionFile(solution.id, file.id, file.originalName)}
                           >
                             <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
                             </svg>
                             <span className="file-name">{file.originalName}</span>
                             <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" className="download-icon">
-                              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
                             </svg>
                           </div>
                         ))}
@@ -269,7 +269,7 @@ const TaskDetailPage = () => {
                       {solution.grade !== null && (
                         <span className="grade-value">{solution.grade}</span>
                       )}
-                      <button 
+                      <button
                         className="btn-secondary btn-edit-grade"
                         onClick={() => functions.handleOpenGradeModal(solution)}
                       >
@@ -289,12 +289,12 @@ const TaskDetailPage = () => {
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Оценить решение</h2>
-              <button 
+              <button
                 className="close-button"
                 onClick={() => functions.setShowGradeModal(false)}
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                 </svg>
               </button>
             </div>
@@ -315,13 +315,13 @@ const TaskDetailPage = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button 
+              <button
                 className="btn-secondary"
                 onClick={() => functions.setShowGradeModal(false)}
               >
                 Отмена
               </button>
-              <button 
+              <button
                 className="btn-primary"
                 onClick={functions.handleGradeSolution}
               >
