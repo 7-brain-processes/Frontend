@@ -58,9 +58,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                   if (item.id === 'home') {
                     navigate('/main');
                   }
-                  if (item.id === 'courses') {
-                    navigate('/main');
-                  }
                 }}
               >
                 <span className="sidebar-icon">{item.icon}</span>
