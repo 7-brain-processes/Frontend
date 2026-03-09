@@ -3,6 +3,23 @@ import { Registration } from "../../../types/Registration";
 import { useNavigate } from "react-router-dom";
 import { register } from "../../../api/auth/register";
 
+export const registrationFunc = async (validateRegistrationForm: () => boolean, registrationForm: Registration, navigate: (path: string) => void) => {
+    if (!validateRegistrationForm()) return false;
+
+    try {
+        const result = await register(registrationForm);
+        if (result) {
+            localStorage.setItem('token', result.token);
+            navigate('/main');
+            return;
+        }
+    }
+    catch (error: any) {
+        console.error('Registration failed:', error.message);
+        alert(error.message || 'Ошибка регистрации. Проверьте данные.');
+    }
+};
+
 export const useRegistrationPage = () => {
     const navigate = useNavigate();
 
@@ -46,22 +63,9 @@ export const useRegistrationPage = () => {
         setRegistrationForm(prev => ({ ...prev, [name]: value }));
     };
 
-    const registration = async () => {
-        if (!validateRegistrationForm()) return false;
-
-        try {
-            const result = await register(registrationForm);
-            if (result) {
-                localStorage.setItem('token', result.token);
-                navigate('/main');
-                return;
-            }
-        }
-        catch (error: any) {
-            console.error('Registration failed:', error.message);
-            alert(error.message || 'Ошибка регистрации. Проверьте данные.');
-        }
-    };
+    const registration = () => {
+        registrationFunc(validateRegistrationForm, registrationForm, navigate);
+    }
 
     return {
         state: { registrationForm, errors },

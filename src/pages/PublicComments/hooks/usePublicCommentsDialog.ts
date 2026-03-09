@@ -2,6 +2,39 @@ import { useState } from "react"
 import { CommentDto, CreateCommentRequest } from "../../../types";
 import { postsService } from "../../../api/posts";
 
+export const createPublicCommentFunc = async (courseId: string, postId: string, setPublicComments: React.Dispatch<React.SetStateAction<CommentDto[]>>, validateCreateCommentForm: () => boolean, createCommentForm: CreateCommentRequest, setCreateCommentForm: React.Dispatch<React.SetStateAction<CreateCommentRequest>>): Promise<boolean> => {
+    if (!validateCreateCommentForm()) return false;
+
+    try {
+        const result = await postsService.createPostComment(courseId, postId, createCommentForm);
+
+        if (result) {
+            await getPublicCommentsFunc(courseId, postId, setPublicComments);
+            setCreateCommentForm({ text: '' });
+            return true;
+        }
+        return false;
+    }
+    catch (error: any) {
+        console.error(error.message);
+        alert(`Ошибка: ${error.message}`);
+        return false;
+    }
+}
+
+export const getPublicCommentsFunc = async (courseId: string, postId: string, setPublicComments: React.Dispatch<React.SetStateAction<CommentDto[]>>, params?: { page?: number; size?: number }) => {
+    try {
+        const result = await postsService.listPostComments(courseId, postId, params);
+        if (result) {
+            setPublicComments(result.content);
+        }
+    }
+    catch (error: any) {
+        console.error(error.message);
+        alert(`Ошибка: ${error.message}`);
+    }
+}
+
 export const usePublicCommentsDialog = () => {
     const [isOpenPublicComments, setIsOpenPublicComments] = useState<boolean>(false);
     const [publicComments, setPublicComments] = useState<CommentDto[]>([]);
@@ -40,37 +73,12 @@ export const usePublicCommentsDialog = () => {
         return Object.keys(e).length === 0;
     };
 
-    const getPublicComments = async (courseId: string, postId: string, params?: { page?: number; size?: number }) => {
-        try {
-            const result = await postsService.listPostComments(courseId, postId, params);
-            if (result) {
-                setPublicComments(result.content);
-            }
-        }
-        catch (error: any) {
-            console.error(error.message);
-            alert(`Ошибка: ${error.message}`);
-        }
+    const getPublicComments = (courseId: string, postId: string, params?: { page?: number; size?: number }) => {
+        getPublicCommentsFunc(courseId, postId, setPublicComments, params);
     }
 
-    const createPublicComment = async (courseId: string, postId: string): Promise<boolean> => {
-        if (!validateCreateCommentForm()) return false;
-
-        try {
-            const result = await postsService.createPostComment(courseId, postId, createCommentForm);
-
-            if (result) {
-                await getPublicComments(courseId, postId);
-                setCreateCommentForm({ text: '' });
-                return true;
-            }
-            return false;
-        }
-        catch (error: any) {
-            console.error(error.message);
-            alert(`Ошибка: ${error.message}`);
-            return false;
-        }
+    const createPublicComment = (courseId: string, postId: string) => {
+        createPublicCommentFunc(courseId, postId, setPublicComments, validateCreateCommentForm, createCommentForm, setCreateCommentForm);
     }
 
     return {

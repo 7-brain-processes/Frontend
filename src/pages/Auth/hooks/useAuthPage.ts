@@ -3,6 +3,23 @@ import { Auth } from "../../../types/Auth"
 import { login as loginApi } from "../../../api/auth/login";
 import { useNavigate } from "react-router-dom";
 
+export const loginFunc = async (validateAuthForm: () => boolean, authForm: Auth, navigate: (path: string) => void) => {
+    if (!validateAuthForm()) return false;
+
+    try {
+        const result = await loginApi(authForm);
+        if (result) {
+            localStorage.setItem('token', result.token);
+            navigate('/main');
+            return;
+        }
+    }
+    catch (error: any) {
+        console.error('Login failed:', error.message);
+        alert(error.message || 'Ошибка входа. Проверьте логин и пароль.');
+    }
+};
+
 export const useAuthPage = () => {
     const navigate = useNavigate();
 
@@ -32,22 +49,9 @@ export const useAuthPage = () => {
         setAuthForm(prev => ({ ...prev, [name]: value }));
     };
 
-    const login = async () => {
-        if (!validateAuthForm()) return false;
-
-        try {
-            const result = await loginApi(authForm);
-            if (result) {
-                localStorage.setItem('token', result.token);
-                navigate('/main');
-                return;
-            }
-        }
-        catch (error: any) {
-            console.error('Login failed:', error.message);
-            alert(error.message || 'Ошибка входа. Проверьте логин и пароль.');
-        }
-    };
+    const login = () => {
+        loginFunc(validateAuthForm, authForm, navigate);
+    }
 
     const navigateToRegistration = () => navigate('/registration');
 

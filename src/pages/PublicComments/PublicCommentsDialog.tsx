@@ -16,7 +16,7 @@ interface PublicCommentsDialogProps {
     createCommentForm: CreateCommentRequest;
     handleChangeCreateComment: (e: React.ChangeEvent<HTMLInputElement>) => void;
     errorsCreateCommentForm: Partial<Record<keyof CreateCommentRequest, string>>;
-    createPublicComment: (courseId: string, postId: string) => Promise<boolean>;
+    createPublicComment: (courseId: string, postId: string) => void;
     onCommentCreated?: () => void;
 }
 
@@ -84,7 +84,7 @@ const PublicCommentsDialog: React.FC<PublicCommentsDialogProps> = ({ isOpenPubli
                 />
                 <SendIcon style={{ cursor: 'pointer' }} onClick={async () => {
                     const success = await createPublicComment(courseId, postId);
-                    if (success && onCommentCreated) {
+                    if (onCommentCreated) {
                         onCommentCreated();
                     }
                 }} />
