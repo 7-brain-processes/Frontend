@@ -18,9 +18,16 @@ interface PublicCommentsDialogProps {
     errorsCreateCommentForm: Partial<Record<keyof CreateCommentRequest, string>>;
     createPublicComment: (courseId: string, postId: string) => void;
     onCommentCreated?: () => void;
+    deleteComments: (courseId: string, postId: string, commentId: string) => void;
+    editPublicComment: (courseId: string, postId: string, commentId: string) => void;
+    setIsEditComment: (isEditComment: boolean) => void;
+    isEditComment: boolean;
+    errorsEditCommentForm: Partial<Record<keyof CreateCommentRequest, string>>;
+    editCommentForm: CreateCommentRequest;
+    handleChangeEditComment: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const PublicCommentsDialog: React.FC<PublicCommentsDialogProps> = ({ isOpenPublicComments, handleIsOpenPublicComments, getPublicComments, courseId, postId, publicComments, createCommentForm, handleChangeCreateComment, errorsCreateCommentForm, createPublicComment, onCommentCreated }) => {
+const PublicCommentsDialog: React.FC<PublicCommentsDialogProps> = ({ isOpenPublicComments, handleIsOpenPublicComments, getPublicComments, courseId, postId, publicComments, createCommentForm, handleChangeCreateComment, errorsCreateCommentForm, createPublicComment, onCommentCreated, deleteComments, editPublicComment, setIsEditComment, isEditComment, errorsEditCommentForm, editCommentForm, handleChangeEditComment }) => {
 
     useEffect(() => {
         if (isOpenPublicComments && courseId && postId) {
@@ -63,7 +70,9 @@ const PublicCommentsDialog: React.FC<PublicCommentsDialogProps> = ({ isOpenPubli
                 (
                     <div style={{ display: 'flex', flexWrap: 'wrap', flexDirection: 'column', gap: '16px' }}>
                         {publicComments.map(publicComment => (
-                            <PublicCommentsItem key={publicComment.id} publicComment={publicComment} />
+                            <PublicCommentsItem key={publicComment.id} publicComment={publicComment} deleteComments={deleteComments}
+                                courseId={courseId} postId={postId} editPublicComment={editPublicComment} setIsEditComment={setIsEditComment} isEditComment={isEditComment}
+                                errorsEditCommentForm={errorsEditCommentForm} editCommentForm={editCommentForm} handleChangeEditComment={handleChangeEditComment} />
                         ))}
                     </div>
                 ) : (

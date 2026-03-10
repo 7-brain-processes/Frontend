@@ -242,8 +242,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           </div>
         ) : (
           posts.map(post => (
-            <div 
-              key={post.id} 
+            <div
+              key={post.id}
               className={`post-card ${post.type === 'TASK' ? 'clickable' : ''}`}
               onClick={() => handlePostClick(post)}
               data-testid="post-item"
@@ -495,21 +495,28 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       )}
 
       {selectedPostId && (
-        <PublicCommentsDialog 
-          isOpenPublicComments={state.isOpenPublicComments} 
+        <PublicCommentsDialog
+          isOpenPublicComments={state.isOpenPublicComments}
           handleIsOpenPublicComments={(isOpen) => {
             functions.handleIsOpenPublicComments(isOpen);
             if (!isOpen) setSelectedPostId(null);
           }}
-          getPublicComments={functions.getPublicComments} 
-          courseId={courseId} 
-          postId={selectedPostId} 
+          getPublicComments={functions.getPublicComments}
+          courseId={courseId}
+          postId={selectedPostId}
           publicComments={state.publicComments}
-          createCommentForm={state.createCommentForm} 
+          createCommentForm={state.createCommentForm}
           handleChangeCreateComment={functions.handleChangeCreateComment}
-          errorsCreateCommentForm={state.errorsCreateCommentForm} 
+          errorsCreateCommentForm={state.errorsCreateCommentForm}
           createPublicComment={functions.createPublicComment}
-          onCommentCreated={loadPosts} 
+          onCommentCreated={loadPosts}
+          deleteComments={functions.deleteComments}
+          editPublicComment={functions.editPublicComment}
+          setIsEditComment={functions.setIsEditComment}
+          isEditComment={state.isEditComment}
+          errorsEditCommentForm={state.errorsEditCommentForm}
+          editCommentForm={state.editCommentForm}
+          handleChangeEditComment={functions.handleChangeEditComment}
         />
       )}
     </div>
