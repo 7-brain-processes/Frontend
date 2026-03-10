@@ -12,6 +12,6 @@ export interface InviteDto {
 
 export interface CreateInviteRequest {
   role: CourseRole;
-  expiresInDays?: number;
+  expiresAt?: string;
   maxUses?: number;
 }

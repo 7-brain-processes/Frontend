@@ -11,7 +11,8 @@ export const useRegistrationPage = () => {
         password: '',
         displayName: ''
     });
-    const [errors, setErrors] = useState<Partial<Record<keyof Registration, string>>>({});
+    const [errors, setErrors] = useState<Partial<Record<keyof Registration | string, string>>>({});
+    const [passwordConfirmation, setPasswordConfirmation] = useState<string>('');
 
     const validateRegistrationForm = (): boolean => {
         const e: typeof errors = {};
@@ -20,21 +21,28 @@ export const useRegistrationPage = () => {
             e.username = 'Поле обязательно.';
         }
         else if (registrationForm?.username.length < 3 || registrationForm?.username.length > 50) {
-            e.username = 'Неправильная валидация.';
+            e.username = 'Имя пользователя должно содержать от 3 до 50 символов.';
         }
 
         if (!registrationForm?.password) {
             e.password = 'Поле обязательно.';
         }
         else if (registrationForm?.password.length < 6 || registrationForm?.password.length > 128) {
-            e.password = 'Неправильная валидация.';
+            e.password = 'Пароль должен содержать от 6 до 128 символов.';
+        }
+
+        if (!passwordConfirmation) {
+            e.passwordConfirmation = 'Поле обязательно.';
+        }
+        else if (passwordConfirmation.length < 6 || passwordConfirmation.length > 128) {
+            e.passwordConfirmation = 'Пароль должен содержать от 6 до 128 символов.';
         }
 
         if (!registrationForm?.displayName) {
             e.displayName = 'Поле обязательно.';
         }
         else if (registrationForm.displayName.length > 100) {
-            e.displayName = 'Неправильная валидация.';
+            e.displayName = 'Отображаемое имя должно содержать от 1 до 100 символов.';
         }
 
         setErrors(e);
@@ -64,10 +72,11 @@ export const useRegistrationPage = () => {
     };
 
     return {
-        state: { registrationForm, errors },
+        state: { registrationForm, errors, passwordConfirmation },
         functions: {
             registration,
-            handleChange
+            handleChange,
+            setPasswordConfirmation
         }
     }
 }

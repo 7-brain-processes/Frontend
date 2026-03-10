@@ -51,13 +51,17 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
   };
 
   const handleCreateInvite = async () => {
+    const currentDate = new Date();
+    const expiresAt = new Date(currentDate);
+    expiresAt.setDate(currentDate.getDate() + inviteExpiresIn);
+
     try {
       const newInvite = await invitesService.createInvite(courseId, {
         role: inviteRole,
         maxUses: inviteMaxUses,
-        expiresInDays: inviteExpiresIn,
+        expiresAt: expiresAt.toISOString()
       });
-      
+
       setInvites([...invites, newInvite]);
       setShowCreateInvite(false);
       setInviteRole('STUDENT');
@@ -73,7 +77,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
     if (!window.confirm('Вы уверены, что хотите удалить это приглашение?')) {
       return;
     }
-    
+
     try {
       await invitesService.revokeInvite(courseId, inviteId);
       setInvites(invites.filter(i => i.id !== inviteId));
@@ -87,7 +91,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
     if (!window.confirm('Вы уверены, что хотите удалить этого участника из курса?')) {
       return;
     }
-    
+
     try {
       await membersService.removeMember(courseId, userId);
       setMembers(members.filter(m => m.user.id !== userId));
@@ -101,10 +105,10 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
     if (!window.confirm('Вы уверены, что хотите покинуть курс?')) {
       return;
     }
-    
+
     try {
       await coursesService.leaveCourse(courseId);
-      window.location.href = '/courses';
+      window.location.href = '/main';
     } catch (err: any) {
       console.error('Failed to leave course:', err);
       alert(err.message || 'Ошибка выхода из курса');
@@ -127,17 +131,17 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
+    return date.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
     });
   };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', { 
-      day: 'numeric', 
+    return date.toLocaleDateString('ru-RU', {
+      day: 'numeric',
       month: 'long',
       hour: '2-digit',
       minute: '2-digit'
@@ -150,19 +154,19 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
         <div className="section-header">
           <h2>Участники</h2>
           <div className="filter-buttons">
-            <button 
+            <button
               className={filter === 'ALL' ? 'active' : ''}
               onClick={() => setFilter('ALL')}
             >
               Все ({members.length})
             </button>
-            <button 
+            <button
               className={filter === 'TEACHER' ? 'active' : ''}
               onClick={() => setFilter('TEACHER')}
             >
               Преподаватели ({teachers.length})
             </button>
-            <button 
+            <button
               className={filter === 'STUDENT' ? 'active' : ''}
               onClick={() => setFilter('STUDENT')}
             >
@@ -196,13 +200,13 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
                     {member.role === 'TEACHER' ? 'Преподаватель' : 'Студент'}
                   </span>
                   {userRole === 'TEACHER' && member.role === 'STUDENT' && (
-                    <button 
+                    <button
                       className="remove-button"
                       onClick={() => handleRemoveMember(member.user.id)}
                       title="Удалить из курса"
                     >
                       <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                       </svg>
                     </button>
                   )}
@@ -217,12 +221,12 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
         <div className="invites-section">
           <div className="section-header">
             <h2>Приглашения</h2>
-            <button 
+            <button
               className="create-invite-button"
               onClick={() => setShowCreateInvite(true)}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
               </svg>
               Создать приглашение
             </button>
@@ -231,11 +235,11 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
           {showCreateInvite && (
             <div className="create-invite-form">
               <h3>Новое приглашение</h3>
-              
+
               <div className="form-group">
                 <label>Роль</label>
-                <select 
-                  value={inviteRole} 
+                <select
+                  value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as CourseRole)}
                 >
                   <option value="STUDENT">Студент</option>
@@ -245,8 +249,8 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
 
               <div className="form-group">
                 <label>Максимальное количество использований</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   min="1"
                   max="100"
                   value={inviteMaxUses}
@@ -256,8 +260,8 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
 
               <div className="form-group">
                 <label>Срок действия (дней)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   min="1"
                   max="365"
                   value={inviteExpiresIn}
@@ -266,7 +270,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
               </div>
 
               <div className="form-actions">
-                <button 
+                <button
                   className="cancel-button"
                   onClick={() => {
                     setShowCreateInvite(false);
@@ -277,7 +281,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
                 >
                   Отмена
                 </button>
-                <button 
+                <button
                   className="submit-button"
                   onClick={handleCreateInvite}
                 >
@@ -319,23 +323,23 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
                     </div>
                     <div className="invite-actions">
                       {isActive && (
-                        <button 
+                        <button
                           className="copy-button"
                           onClick={() => copyInviteLink(invite.code)}
                           title="Скопировать ссылку"
                         >
                           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
                           </svg>
                         </button>
                       )}
-                      <button 
+                      <button
                         className="delete-button"
                         onClick={() => handleDeleteInvite(invite.id)}
                         title="Удалить приглашение"
                       >
                         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
                         </svg>
                       </button>
                     </div>

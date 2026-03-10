@@ -18,11 +18,16 @@ export const useAuthPage = () => {
         if (!authForm?.username) {
             e.username = 'Поле обязательно.';
         }
+        else if (authForm?.username.length < 3 || authForm?.username.length > 50) {
+            e.username = 'Имя пользователя должно содержать от 3 до 50 символов.';
+        }
 
         if (!authForm?.password) {
             e.password = 'Поле обязательно.';
         }
-
+        else if (authForm?.password.length < 6 || authForm?.password.length > 128) {
+            e.password = 'Пароль должен содержать от 6 до 128 символов.';
+        }
         setErrors(e);
         return Object.keys(e).length === 0;
     };

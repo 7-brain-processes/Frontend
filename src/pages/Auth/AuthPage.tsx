@@ -38,7 +38,7 @@ const AuthPage = () => {
                 <InputForm
                     label=""
                     name="password"
-                    type="text"
+                    type="password"
                     value={state.authForm?.password || ''}
                     placeholder="Пароль"
                     onChange={functions.handleChange}

@@ -100,6 +100,11 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       return;
     }
 
+    if (postForm.type === 'TASK' && postForm.deadline && new Date(postForm.deadline) < new Date()) {
+      alert('Срок сдачи не может быть указан в прошедшем времени');
+      return;
+    }
+
     try {
       if (editingPost) {
         const updatedPost = await postsService.updatePost(courseId, editingPost.id, {
@@ -242,8 +247,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           </div>
         ) : (
           posts.map(post => (
-            <div 
-              key={post.id} 
+            <div
+              key={post.id}
               className={`post-card ${post.type === 'TASK' ? 'clickable' : ''}`}
               onClick={() => handlePostClick(post)}
               data-testid="post-item"
@@ -495,21 +500,21 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       )}
 
       {selectedPostId && (
-        <PublicCommentsDialog 
-          isOpenPublicComments={state.isOpenPublicComments} 
+        <PublicCommentsDialog
+          isOpenPublicComments={state.isOpenPublicComments}
           handleIsOpenPublicComments={(isOpen) => {
             functions.handleIsOpenPublicComments(isOpen);
             if (!isOpen) setSelectedPostId(null);
           }}
-          getPublicComments={functions.getPublicComments} 
-          courseId={courseId} 
-          postId={selectedPostId} 
+          getPublicComments={functions.getPublicComments}
+          courseId={courseId}
+          postId={selectedPostId}
           publicComments={state.publicComments}
-          createCommentForm={state.createCommentForm} 
+          createCommentForm={state.createCommentForm}
           handleChangeCreateComment={functions.handleChangeCreateComment}
-          errorsCreateCommentForm={state.errorsCreateCommentForm} 
+          errorsCreateCommentForm={state.errorsCreateCommentForm}
           createPublicComment={functions.createPublicComment}
-          onCommentCreated={loadPosts} 
+          onCommentCreated={loadPosts}
         />
       )}
     </div>
