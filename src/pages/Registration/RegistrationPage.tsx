@@ -26,7 +26,7 @@ const RegistrationPage = () => {
                     label=""
                     name="username"
                     type="text"
-                    value={state.registrationForm?.username || ''}
+                    value={state.registrationForm.username}
                     placeholder="Имя пользователя"
                     onChange={functions.handleChange}
                     error={!!state.errors.username}
@@ -37,8 +37,8 @@ const RegistrationPage = () => {
                 <InputForm
                     label=""
                     name="password"
-                    type="text"
-                    value={state.registrationForm?.password || ''}
+                    type="password"
+                    value={state.registrationForm.password}
                     placeholder="Пароль"
                     onChange={functions.handleChange}
                     error={!!state.errors.password}
@@ -48,9 +48,21 @@ const RegistrationPage = () => {
                 />
                 <InputForm
                     label=""
+                    name="confirmPassword"
+                    type="password"
+                    value={state.registrationForm.confirmPassword}
+                    placeholder="Подтвердите пароль"
+                    onChange={functions.handleChange}
+                    error={!!state.errors.confirmPassword}
+                    helperText={state.errors.confirmPassword}
+                    width="100%"
+                    dataTestId="confirm-password-input"
+                />
+                <InputForm
+                    label=""
                     name="displayName"
                     type="text"
-                    value={state.registrationForm?.displayName || ''}
+                    value={state.registrationForm.displayName}
                     placeholder="Отображаемое имя"
                     onChange={functions.handleChange}
                     error={!!state.errors.displayName}

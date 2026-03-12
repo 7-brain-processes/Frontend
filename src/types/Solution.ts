@@ -27,6 +27,6 @@ export interface PageSolutionDto {
 }
 
 export interface GradeRequest {
-  grade: number;
+  grade: number | null;
   comment?: string;
 }

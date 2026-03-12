@@ -1,279 +1,264 @@
-import { createPublicCommentFunc, getPublicCommentsFunc } from "../pages/PublicComments/hooks/usePublicCommentsDialog";
+import {
+  createPublicCommentFunc,
+  deleteCommentsFunc,
+  editPublicCommentFunc,
+  getPublicCommentsFunc,
+} from '../pages/PublicComments/hooks/usePublicCommentsDialog';
+import { postsService } from '../api/posts';
+import { PageCommentDto } from '../types';
+
+jest.mock('../api/posts', () => ({
+  postsService: {
+    createPostComment: jest.fn(),
+    listPostComments: jest.fn(),
+    deletePostComment: jest.fn(),
+    updatePostComment: jest.fn(),
+  },
+}));
 
 describe('Тестирование комментариев', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+  const mockedPostsService = postsService as jest.Mocked<typeof postsService>;
+  const buildCommentsResponse = (text: string): PageCommentDto => ({
+    content: [
+      {
+        id: '1',
+        text,
+        author: {
+          id: '1',
+          username: 'username',
+          displayName: 'displayName',
+          createdAt: '2026-01-01T00:00:00Z',
+        },
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+        updatedAt: new Date('2026-01-01T00:00:00Z'),
+      },
+    ],
+    page: 0,
+    size: 10,
+    totalElements: 1,
+    totalPages: 1,
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (window.alert as jest.Mock).mockReset();
+  });
+
+  test('Не прошла валидация создания комментария', async () => {
+    const validateMock = jest.fn(() => false);
+
+    const result = await createPublicCommentFunc(
+      'courseId',
+      'postId',
+      jest.fn(),
+      validateMock,
+      { text: '' },
+      jest.fn()
+    );
+
+    expect(result).toBe(false);
+    expect(validateMock).toHaveBeenCalled();
+    expect(mockedPostsService.createPostComment).not.toHaveBeenCalled();
+  });
+
+  test('Успешное создание комментария', async () => {
+    const validateMock = jest.fn(() => true);
+    const setPublicCommentsMock = jest.fn();
+    const setCreateCommentFormMock = jest.fn();
+    const commentsResponse = buildCommentsResponse('комментарий');
+
+    mockedPostsService.createPostComment.mockResolvedValue({
+      id: '1',
+      text: 'test',
+      author: {
+        id: '1',
+        username: 'username',
+        displayName: 'displayName',
+        createdAt: '2026-01-01T00:00:00Z',
+      },
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-01T00:00:00Z'),
     });
+    mockedPostsService.listPostComments.mockResolvedValue(commentsResponse);
 
-    test('Не прошла валидация', async () => {
-        //Arrange
-        const validateMock = jest.fn(() => false);
-        const setPublicCommentsMock = jest.fn();
-        const setCreateCommentFormMock = jest.fn();
-        const createPostCommentMock = jest.fn();
+    const result = await createPublicCommentFunc(
+      'courseId',
+      'postId',
+      setPublicCommentsMock,
+      validateMock,
+      { text: 'test' },
+      setCreateCommentFormMock
+    );
 
-        //Act
-        const result = await createPublicCommentFunc(
-            'courseId',
-            'postId',
-            setPublicCommentsMock,
-            validateMock,
-            {
-                text: ''
-            },
-            setCreateCommentFormMock
-        );
-
-        //Assert
-        expect(result).toBe(false);
-        expect(validateMock).toHaveBeenCalled();
-        expect(createPostCommentMock).not.toHaveBeenCalled();
-        expect(getPublicCommentsFunc).not.toHaveBeenCalled();
-        expect(setCreateCommentFormMock).not.toHaveBeenCalled();
+    expect(result).toBe(true);
+    expect(validateMock).toHaveBeenCalled();
+    expect(mockedPostsService.createPostComment).toHaveBeenCalledWith('courseId', 'postId', {
+      text: 'test',
     });
+    expect(mockedPostsService.listPostComments).toHaveBeenCalledWith('courseId', 'postId', undefined);
+    expect(setPublicCommentsMock).toHaveBeenCalledWith(commentsResponse.content);
+    expect(setCreateCommentFormMock).toHaveBeenCalledWith({ text: '' });
+  });
 
-    test('Успешное содзание комментария', async () => {
-        //Arrange
-        const validateMock = jest.fn(() => true);
-        const setPublicCommentsMock = jest.fn();
-        const setCreateCommentFormMock = jest.fn();
-        const createPostCommentMock = jest.fn();
+  test('Ошибка при создании комментария', async () => {
+    const validateMock = jest.fn(() => true);
+    mockedPostsService.createPostComment.mockRejectedValue(new Error('Ошибка сервиса'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
 
-        //Act
-        const result = await createPublicCommentFunc(
-            'courseId',
-            'postId',
-            setPublicCommentsMock,
-            validateMock,
-            {
-                text: 'test'
-            },
-            setCreateCommentFormMock
-        );
+    const result = await createPublicCommentFunc(
+      'courseId',
+      'postId',
+      jest.fn(),
+      validateMock,
+      { text: 'test' },
+      jest.fn()
+    );
 
-        //Assert
-        expect(result).toBe(true);
-        expect(validateMock).toHaveBeenCalled();
-        expect(createPostCommentMock).toHaveBeenCalledWith('courseId', 'postId', { text: 'test' });
-        expect(getPublicCommentsFunc).toHaveBeenCalledWith('courseId', 'postId', expect.any(Function));
-        expect(setCreateCommentFormMock).toHaveBeenCalledWith({ text: '' });
+    expect(result).toBe(false);
+    expect(validateMock).toHaveBeenCalled();
+    expect(mockedPostsService.createPostComment).toHaveBeenCalledWith('courseId', 'postId', {
+      text: 'test',
     });
+    expect(window.alert).toHaveBeenCalledWith('Ошибка: Ошибка сервиса');
+  });
 
-    test('Ошибка при создании комментария', async () => {
-        //Arrange
-        const validateMock = jest.fn(() => true);
-        const setPublicCommentsMock = jest.fn();
-        const setCreateCommentFormMock = jest.fn();
-        const createPostCommentMock = jest.fn();
-        const errorMessage = 'Ошибка сервиса';
-        createPostCommentMock.mockRejectedValue(new Error(errorMessage));
-        global.alert = jest.fn();
+  test('Успешное получение всех комментариев', async () => {
+    const setPublicCommentsMock = jest.fn();
+    const result = buildCommentsResponse('комментарий');
+    mockedPostsService.listPostComments.mockResolvedValue(result);
 
-        //Act
-        const result = await createPublicCommentFunc(
-            'courseId',
-            'postId',
-            setPublicCommentsMock,
-            validateMock,
-            {
-                text: 'test'
-            },
-            setCreateCommentFormMock
-        );
+    await getPublicCommentsFunc('courseId', 'postId', setPublicCommentsMock);
 
-        //Assert
-        expect(result).toBe(false);
-        expect(validateMock).toHaveBeenCalled();
-        expect(createPostCommentMock).toHaveBeenCalledWith('courseId', 'postId', { text: 'test' });
-        expect(global.alert).toHaveBeenCalledWith(`Ошибка: ${errorMessage}`);
-        expect(getPublicCommentsFunc).not.toHaveBeenCalled();
-        expect(setCreateCommentFormMock).not.toHaveBeenCalled();
+    expect(mockedPostsService.listPostComments).toHaveBeenCalledWith('courseId', 'postId', undefined);
+    expect(setPublicCommentsMock).toHaveBeenCalledWith(result.content);
+  });
+
+  test('Ошибка при получении всех комментариев', async () => {
+    const setPublicCommentsMock = jest.fn();
+    mockedPostsService.listPostComments.mockRejectedValue(new Error('Ошибка сервиса'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await getPublicCommentsFunc('courseId', 'postId', setPublicCommentsMock);
+
+    expect(mockedPostsService.listPostComments).toHaveBeenCalledWith('courseId', 'postId', undefined);
+    expect(window.alert).toHaveBeenCalledWith('Ошибка: Ошибка сервиса');
+    expect(setPublicCommentsMock).not.toHaveBeenCalled();
+  });
+
+  test('Успешное удаление комментария', async () => {
+    const setPublicCommentsMock = jest.fn();
+    const commentsResponse = buildCommentsResponse('комментарий');
+    mockedPostsService.listPostComments.mockResolvedValue(commentsResponse);
+
+    await deleteCommentsFunc('courseId', 'postId', 'commentId', setPublicCommentsMock);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mockedPostsService.deletePostComment).toHaveBeenCalledWith('courseId', 'postId', 'commentId');
+    expect(mockedPostsService.listPostComments).toHaveBeenCalledWith('courseId', 'postId', undefined);
+    expect(setPublicCommentsMock).toHaveBeenCalledWith(commentsResponse.content);
+  });
+
+  test('Ошибка при удалении комментария', async () => {
+    mockedPostsService.deletePostComment.mockRejectedValue(new Error('Ошибка сервиса'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await deleteCommentsFunc('courseId', 'postId', 'commentId', jest.fn());
+
+    expect(mockedPostsService.deletePostComment).toHaveBeenCalledWith('courseId', 'postId', 'commentId');
+    expect(window.alert).toHaveBeenCalledWith('Ошибка: Ошибка сервиса');
+    expect(mockedPostsService.listPostComments).not.toHaveBeenCalled();
+  });
+
+  test('Не прошла валидация редактирования комментария', async () => {
+    const validateMock = jest.fn(() => false);
+
+    const result = await editPublicCommentFunc(
+      'courseId',
+      'postId',
+      'commentId',
+      jest.fn(),
+      validateMock,
+      { text: '' },
+      jest.fn(),
+      jest.fn()
+    );
+
+    expect(result).toBe(false);
+    expect(validateMock).toHaveBeenCalled();
+    expect(mockedPostsService.updatePostComment).not.toHaveBeenCalled();
+  });
+
+  test('Успешное редактирование комментария', async () => {
+    const validateMock = jest.fn(() => true);
+    const setPublicCommentsMock = jest.fn();
+    const setEditCommentFormMock = jest.fn();
+    const setIsEditCommentMock = jest.fn();
+    const commentsResponse = buildCommentsResponse('обновленный комментарий');
+
+    mockedPostsService.updatePostComment.mockResolvedValue({
+      id: '1',
+      text: 'обновленный комментарий',
+      author: {
+        id: '1',
+        username: 'username',
+        displayName: 'displayName',
+        createdAt: '2026-01-01T00:00:00Z',
+      },
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-01T00:00:00Z'),
     });
+    mockedPostsService.listPostComments.mockResolvedValue(commentsResponse);
 
-    test('Успешное получение всех комментариев', async () => {
-        //Arrange
-        const setPublicCommentsMock = jest.fn();
-        const listPostCommentsMock = jest.fn();
-        const result = { content: [{ id: 1, text: 'комментарий' }] };
-        listPostCommentsMock.mockResolvedValue(result);
+    const result = await editPublicCommentFunc(
+      'courseId',
+      'postId',
+      'commentId',
+      setPublicCommentsMock,
+      validateMock,
+      { text: 'test' },
+      setEditCommentFormMock,
+      setIsEditCommentMock
+    );
 
-        //Act
-        await getPublicCommentsFunc(
-            'courseId',
-            'postId',
-            setPublicCommentsMock
-        );
+    expect(result).toBe(true);
+    expect(validateMock).toHaveBeenCalled();
+    expect(mockedPostsService.updatePostComment).toHaveBeenCalledWith(
+      'courseId',
+      'postId',
+      'commentId',
+      { text: 'test' }
+    );
+    expect(mockedPostsService.listPostComments).toHaveBeenCalledWith('courseId', 'postId', undefined);
+    expect(setPublicCommentsMock).toHaveBeenCalledWith(commentsResponse.content);
+    expect(setEditCommentFormMock).toHaveBeenCalledWith({ text: '' });
+    expect(setIsEditCommentMock).toHaveBeenCalledWith(false);
+  });
 
-        //Assert
-        expect(listPostCommentsMock).toHaveBeenCalled();
-        expect(setPublicCommentsMock).toHaveBeenCalledWith(result.content);
-    });
+  test('Ошибка при редактировании комментария', async () => {
+    const validateMock = jest.fn(() => true);
+    mockedPostsService.updatePostComment.mockRejectedValue(new Error('Ошибка сервиса'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    test('Ошибка при получении всех комментариев', async () => {
-        //Arrange
-        const setPublicCommentsMock = jest.fn();
-        const listPostCommentsMock = jest.fn();
-        const errorMessage = 'Ошибка сервиса';
-        listPostCommentsMock.mockRejectedValue(new Error(errorMessage));;
-        global.alert = jest.fn();
+    const result = await editPublicCommentFunc(
+      'courseId',
+      'postId',
+      'commentId',
+      jest.fn(),
+      validateMock,
+      { text: 'test' },
+      jest.fn(),
+      jest.fn()
+    );
 
-        //Act
-        const result = await getPublicCommentsFunc(
-            'courseId',
-            'postId',
-            setPublicCommentsMock
-        );
-
-        //Assert
-        expect(listPostCommentsMock).toHaveBeenCalled();
-        expect(global.alert).toHaveBeenCalledWith(`Ошибка: ${errorMessage}`);
-        expect(setPublicCommentsMock).not.toHaveBeenCalled();
-        expect(result).toBeUndefined;
-    });
-
-    test('Успешное удаление своего комментарий', async () => {
-        //Arrange
-        const setPublicCommentsMock = jest.fn();
-        const deletePostCommentMock = jest.fn();
-        (getPublicCommentsFunc as jest.Mock).mockImplementation(() => { });
-
-        //Act
-        /*await deletePublicCommentsFunc(
-            'courseId',
-            'postId',
-            'commentId',
-            setPublicCommentsMock
-        );*/
-
-        //Assert
-        expect(deletePostCommentMock).toHaveBeenCalledWith('courseId', 'postId', 'commentId',);
-        expect(getPublicCommentsFunc).toHaveBeenCalledWith('courseId', 'postId', setPublicCommentsMock);
-    });
-
-    test('Ошибка при удалении своего комментария', async () => {
-        //Arrange
-        const setPublicCommentsMock = jest.fn();
-        const errorMessage = 'Ошибка сервиса';
-        const deletePostCommentMock = jest.fn();
-        deletePostCommentMock.mockRejectedValue(new Error(errorMessage));;
-        global.alert = jest.fn();
-        (getPublicCommentsFunc as jest.Mock).mockImplementation(() => { });
-        jest.spyOn(console, 'error').mockImplementation(() => { });
-
-        //Act
-        /* await deletePublicCommentsFunc(
-             'courseId',
-             'postId',
-             'commentId',
-             setPublicCommentsMock
-         );*/
-
-        //Assert
-        expect(deletePostCommentMock).toHaveBeenCalledWith('courseId', 'postId', 'commentId',);
-        expect(global.alert).toHaveBeenCalledWith(`Ошибка: ${errorMessage}`);
-        expect(console.error).toHaveBeenCalledWith(errorMessage);
-        expect(getPublicCommentsFunc).not.toHaveBeenCalled();
-    });
-
-    test('Не прошла валидация', async () => {
-        //Arrange
-        const validateMock = jest.fn(() => false);
-        const setPublicCommentsMock = jest.fn();
-        const setEditCommentFormMock = jest.fn();
-        const setIsEditCommentMock = jest.fn();
-        const updatePostCommentMock = jest.fn();
-        (getPublicCommentsFunc as jest.Mock).mockImplementation(() => { });
-
-        //Act
-        /*const result = await editPublicCommentFunc(
-            'courseId',
-            'postId',
-            'commentId',
-            setPublicCommentsMock,
-            validateMock,
-            {
-                text: ''
-            },
-            setEditCommentFormMock,
-            setIsEditCommentMock
-        );*/
-
-        //Assert
-        //expect(result).toBe(false);
-        expect(validateMock).toHaveBeenCalled();
-        expect(updatePostCommentMock).not.toHaveBeenCalled();
-        expect(getPublicCommentsFunc).not.toHaveBeenCalled();
-        expect(setEditCommentFormMock).not.toHaveBeenCalled();
-        expect(setIsEditCommentMock).not.toHaveBeenCalled();
-    });
-
-    test('Успешное редактирование своего комментария', async () => {
-        //Arrange
-        const validateMock = jest.fn(() => true);
-        const setPublicCommentsMock = jest.fn();
-        const setEditCommentFormMock = jest.fn();
-        const setIsEditCommentMock = jest.fn();
-        const updatePostCommentMock = jest.fn();
-        (getPublicCommentsFunc as jest.Mock).mockImplementation(() => { });
-
-        //Act
-        /*const result = await editPublicCommentFunc(
-            'courseId',
-            'postId',
-            'commentId',
-            setPublicCommentsMock,
-            validateMock,
-            {
-                text: 'test'
-            },
-            setEditCommentFormMock,
-            setIsEditCommentMock
-        );*/
-
-        //Assert
-        // expect(result).toBe(true);
-        expect(validateMock).toHaveBeenCalled();
-        expect(updatePostCommentMock).toHaveBeenCalledWith('courseId', 'postId', 'commentId', { text: 'test' });
-        expect(getPublicCommentsFunc).toHaveBeenCalledWith('courseId', 'postId', 'commentId', setPublicCommentsMock);
-        expect(setEditCommentFormMock).toHaveBeenCalledWith({ text: '' });
-        expect(setIsEditCommentMock).toHaveBeenCalledWith(false);
-    });
-
-    test('Ошибка при редактировании своего комментария', async () => {
-        //Arrange
-        const validateMock = jest.fn(() => true);
-        const setPublicCommentsMock = jest.fn();
-        const setEditCommentFormMock = jest.fn();
-        const setIsEditCommentMock = jest.fn();
-        const updatePostCommentMock = jest.fn();
-        const errorMessage = 'Ошибка сервиса';
-        updatePostCommentMock.mockRejectedValue(new Error(errorMessage));
-        global.alert = jest.fn();
-        (getPublicCommentsFunc as jest.Mock).mockImplementation(() => { });
-        jest.spyOn(console, 'error').mockImplementation(() => { });
-
-        //Act
-        /*const result = await editPublicCommentFunc(
-            'courseId',
-            'postId',
-            'commentId',
-            setPublicCommentsMock,
-            validateMock,
-            {
-                text: 'test'
-            },
-            setEditCommentFormMock,
-            setIsEditCommentMock
-        );*/
-
-        //Assert
-        //expect(result).toBe(false);
-        expect(validateMock).toHaveBeenCalled();
-        expect(updatePostCommentMock).toHaveBeenCalledWith('courseId', 'postId', { text: 'test' });
-        expect(setEditCommentFormMock).not.toHaveBeenCalled();
-        expect(setIsEditCommentMock).not.toHaveBeenCalled();
-        expect(global.alert).toHaveBeenCalledWith(`Ошибка: ${errorMessage}`);
-        expect(console.error).toHaveBeenCalledWith(errorMessage);
-        expect(getPublicCommentsFunc).not.toHaveBeenCalled();
-    });
+    expect(result).toBe(false);
+    expect(validateMock).toHaveBeenCalled();
+    expect(mockedPostsService.updatePostComment).toHaveBeenCalledWith(
+      'courseId',
+      'postId',
+      'commentId',
+      { text: 'test' }
+    );
+    expect(window.alert).toHaveBeenCalledWith('Ошибка: Ошибка сервиса');
+    expect(mockedPostsService.listPostComments).not.toHaveBeenCalled();
+  });
 });

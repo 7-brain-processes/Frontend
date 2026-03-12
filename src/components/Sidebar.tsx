@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Sidebar.css';
 import { Course, generateColor } from './CourseCard';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,8 +13,9 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses = [], onCourseClick }) => {
   const navigate = useNavigate();
-
+  const location = useLocation();
   const [coursesExpanded, setCoursesExpanded] = useState(true);
+
   const menuItems = [
     {
       id: 'home',
@@ -24,7 +25,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
         </svg>
       ),
       label: 'Главная страница',
-      testId: 'sidebar-home'
+      testId: 'sidebar-home',
+      active: location.pathname === '/main',
     },
     {
       id: 'courses',
@@ -35,8 +37,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
       ),
       label: 'Курсы',
       testId: 'sidebar-courses',
-      active: true,
-      expandable: true
+      active: false,
+      expandable: true,
     },
     {
       id: 'assignments',
@@ -46,8 +48,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
         </svg>
       ),
       label: 'Список заданий',
-      testId: 'sidebar-assignments'
-    }
+      testId: 'sidebar-assignments',
+      active: location.pathname === '/assignments',
+    },
   ];
 
   return (
@@ -65,12 +68,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                   if (item.expandable && !isCollapsed) {
                     setCoursesExpanded(!coursesExpanded);
                   }
+
                   if (item.id === 'home') {
                     navigate('/main');
                   }
-                  if (item.id === 'courses') {
-                    navigate('/main');
-                  }
+
                   if (item.id === 'assignments') {
                     navigate('/assignments');
                   }
@@ -102,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                       <span
                         className="course-submenu-color"
                         style={{
-                          backgroundColor: generateColor(course.id)
+                          backgroundColor: generateColor(course.id),
                         }}
                       >
                         {course.name.charAt(0)}

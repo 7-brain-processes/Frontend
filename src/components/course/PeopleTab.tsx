@@ -10,6 +10,58 @@ interface PeopleTabProps {
 
 type MemberFilter = 'ALL' | 'TEACHER' | 'STUDENT';
 
+const INVITE_EXPIRATIONS_STORAGE_KEY = 'invite-expirations';
+
+const getStoredInviteExpirations = (): Record<string, string> => {
+  try {
+    const raw = localStorage.getItem(INVITE_EXPIRATIONS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const setStoredInviteExpirations = (expirations: Record<string, string>) => {
+  localStorage.setItem(INVITE_EXPIRATIONS_STORAGE_KEY, JSON.stringify(expirations));
+};
+
+const persistInviteExpiration = (inviteId: string, expiresAt: string | null) => {
+  const expirations = getStoredInviteExpirations();
+
+  if (expiresAt) {
+    expirations[inviteId] = expiresAt;
+  } else {
+    delete expirations[inviteId];
+  }
+
+  setStoredInviteExpirations(expirations);
+};
+
+const getDerivedExpiration = (createdAt: string, expiresInDays?: number) => {
+  if (!expiresInDays) {
+    return null;
+  }
+
+  const createdDate = new Date(createdAt);
+
+  if (Number.isNaN(createdDate.getTime())) {
+    return null;
+  }
+
+  createdDate.setDate(createdDate.getDate() + expiresInDays);
+  return createdDate.toISOString();
+};
+
+const mergeInviteExpirations = (invite: InviteDto): InviteDto => {
+  if (invite.expiresAt) {
+    persistInviteExpiration(invite.id, invite.expiresAt);
+    return invite;
+  }
+
+  const storedExpiration = getStoredInviteExpirations()[invite.id];
+  return storedExpiration ? { ...invite, expiresAt: storedExpiration } : invite;
+};
+
 export const loadMembersFunc = async (setLoading: React.Dispatch<React.SetStateAction<boolean>>, courseId: string, setMembers: React.Dispatch<React.SetStateAction<MemberDto[]>>) => {
   try {
     setLoading(true);
@@ -61,7 +113,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
   const loadInvites = async () => {
     try {
       const data = await invitesService.listInvites(courseId);
-      setInvites(data);
+      setInvites(data.map(mergeInviteExpirations));
     } catch (err: any) {
       console.error('Failed to load invites, using empty list:', err);
       setInvites([]);
@@ -70,13 +122,15 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
 
   const handleCreateInvite = async () => {
     try {
-      const newInvite = await invitesService.createInvite(courseId, {
+      const createdInvite = await invitesService.createInvite(courseId, {
         role: inviteRole,
         maxUses: inviteMaxUses,
         expiresInDays: inviteExpiresIn,
       });
 
-      setInvites([...invites, newInvite]);
+      const derivedExpiration = getDerivedExpiration(createdInvite.createdAt || new Date().toISOString(), inviteExpiresIn);
+      persistInviteExpiration(createdInvite.id, createdInvite.expiresAt || derivedExpiration);
+      await loadInvites();
       setShowCreateInvite(false);
       setInviteRole('STUDENT');
       setInviteMaxUses(1);
@@ -94,6 +148,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
 
     try {
       await invitesService.revokeInvite(courseId, inviteId);
+      persistInviteExpiration(inviteId, null);
       setInvites(invites.filter(i => i.id !== inviteId));
     } catch (err: any) {
       console.error('Failed to delete invite:', err);
@@ -120,9 +175,8 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
   };
 
   const copyInviteLink = (code: string) => {
-    const link = `${window.location.origin}/join/${code}`;
-    navigator.clipboard.writeText(link);
-    alert('Ссылка скопирована в буфер обмена!');
+    navigator.clipboard.writeText(code);
+    alert('Код приглашения скопирован в буфер обмена!');
   };
 
   const filteredMembers = members.filter(member => {
@@ -330,7 +384,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
                         <button
                           className="copy-button"
                           onClick={() => copyInviteLink(invite.code)}
-                          title="Скопировать ссылку"
+                          title="Скопировать код"
                         >
                           <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
                             <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />

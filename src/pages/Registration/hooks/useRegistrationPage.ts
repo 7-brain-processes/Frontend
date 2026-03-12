@@ -3,11 +3,16 @@ import { Registration } from "../../../types/Registration";
 import { useNavigate } from "react-router-dom";
 import { register } from "../../../api/auth/register";
 
-export const registrationFunc = async (validateRegistrationForm: () => boolean, registrationForm: Registration, navigate: (path: string) => void) => {
+export const registrationFunc = async (
+    validateRegistrationForm: () => boolean,
+    registrationForm: Registration,
+    navigate: (path: string) => void
+) => {
     if (!validateRegistrationForm()) return false;
 
     try {
-        const result = await register(registrationForm);
+        const { username, password, displayName } = registrationForm;
+        const result = await register({ username, password, displayName });
         if (result) {
             localStorage.setItem('token', result.token);
             navigate('/main');
@@ -16,7 +21,7 @@ export const registrationFunc = async (validateRegistrationForm: () => boolean, 
     }
     catch (error: any) {
         console.error('Registration failed:', error.message);
-        alert(error.message || 'Ошибка регистрации. Проверьте данные.');
+        alert(error.message || 'Ошибка регистрации. Проверьте введённые данные.');
     }
 };
 
@@ -26,6 +31,7 @@ export const useRegistrationPage = () => {
     const [registrationForm, setRegistrationForm] = useState<Registration>({
         username: '',
         password: '',
+        confirmPassword: '',
         displayName: ''
     });
     const [errors, setErrors] = useState<Partial<Record<keyof Registration, string>>>({});
@@ -33,25 +39,26 @@ export const useRegistrationPage = () => {
     const validateRegistrationForm = (): boolean => {
         const e: typeof errors = {};
 
-        if (!registrationForm?.username) {
-            e.username = 'Поле обязательно.';
-        }
-        else if (registrationForm?.username.length < 3 || registrationForm?.username.length > 50) {
-            e.username = 'Неправильная валидация.';
-        }
-
-        if (!registrationForm?.password) {
-            e.password = 'Поле обязательно.';
-        }
-        else if (registrationForm?.password.length < 6 || registrationForm?.password.length > 128) {
-            e.password = 'Неправильная валидация.';
+        if (!registrationForm.username.trim()) {
+            e.username = 'Введите имя пользователя.';
+        } else if (registrationForm.username.length < 3 || registrationForm.username.length > 50) {
+            e.username = 'Имя пользователя должно содержать от 3 до 50 символов.';
         }
 
-        if (!registrationForm?.displayName) {
-            e.displayName = 'Поле обязательно.';
+        if (!registrationForm.password.trim()) {
+            e.password = 'Введите пароль.';
+        } else if (registrationForm.password.length < 6 || registrationForm.password.length > 128) {
+            e.password = 'Пароль должен содержать от 6 до 128 символов.';
         }
-        else if (registrationForm.displayName.length > 100) {
-            e.displayName = 'Неправильная валидация.';
+
+        if (!registrationForm.confirmPassword.trim()) {
+            e.confirmPassword = 'Подтвердите пароль.';
+        } else if (registrationForm.confirmPassword !== registrationForm.password) {
+            e.confirmPassword = 'Пароли не совпадают.';
+        }
+
+        if (registrationForm.displayName.length > 100) {
+            e.displayName = 'Отображаемое имя не должно превышать 100 символов.';
         }
 
         setErrors(e);
@@ -65,7 +72,7 @@ export const useRegistrationPage = () => {
 
     const registration = () => {
         registrationFunc(validateRegistrationForm, registrationForm, navigate);
-    }
+    };
 
     return {
         state: { registrationForm, errors },
@@ -73,5 +80,5 @@ export const useRegistrationPage = () => {
             registration,
             handleChange
         }
-    }
-}
+    };
+};
