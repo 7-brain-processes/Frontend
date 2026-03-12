@@ -119,7 +119,16 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       setDeadlineError('Срок сдачи задания не может быть в прошлом');
       return;
     }
+<<<<<<< development
     setDeadlineError('');
+=======
+
+    if (postForm.type === 'TASK' && postForm.deadline && new Date(postForm.deadline) < new Date()) {
+      alert('Срок сдачи не может быть указан в прошедшем времени');
+      return;
+    }
+
+>>>>>>> main
     try {
       if (editingPost) {
         const updatedPost = await postsService.updatePost(courseId, editingPost.id, {
@@ -547,6 +556,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           errorsCreateCommentForm={state.errorsCreateCommentForm}
           createPublicComment={functions.createPublicComment}
           onCommentCreated={loadPosts}
+<<<<<<< development
           deleteComments={functions.deleteComments}
           editPublicComment={functions.editPublicComment}
           setIsEditComment={functions.setIsEditComment}
@@ -554,6 +564,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           errorsEditCommentForm={state.errorsEditCommentForm}
           editCommentForm={state.editCommentForm}
           handleChangeEditComment={functions.handleChangeEditComment}
+=======
+>>>>>>> main
         />
       )}
     </div>

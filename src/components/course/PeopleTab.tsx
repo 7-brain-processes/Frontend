@@ -121,16 +121,24 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
   };
 
   const handleCreateInvite = async () => {
+    const currentDate = new Date();
+    const expiresAt = new Date(currentDate);
+    expiresAt.setDate(currentDate.getDate() + inviteExpiresIn);
+
     try {
       const createdInvite = await invitesService.createInvite(courseId, {
         role: inviteRole,
         maxUses: inviteMaxUses,
-        expiresInDays: inviteExpiresIn,
+        expiresAt: expiresAt.toISOString()
       });
 
+<<<<<<< development
       const derivedExpiration = getDerivedExpiration(createdInvite.createdAt || new Date().toISOString(), inviteExpiresIn);
       persistInviteExpiration(createdInvite.id, createdInvite.expiresAt || derivedExpiration);
       await loadInvites();
+=======
+      setInvites([...invites, newInvite]);
+>>>>>>> main
       setShowCreateInvite(false);
       setInviteRole('STUDENT');
       setInviteMaxUses(1);
@@ -170,8 +178,23 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
     }
   };
 
+<<<<<<< development
   const handleLeaveCourse = () => {
     handleLeaveCourseFunc(courseId);
+=======
+  const handleLeaveCourse = async () => {
+    if (!window.confirm('Вы уверены, что хотите покинуть курс?')) {
+      return;
+    }
+
+    try {
+      await coursesService.leaveCourse(courseId);
+      window.location.href = '/main';
+    } catch (err: any) {
+      console.error('Failed to leave course:', err);
+      alert(err.message || 'Ошибка выхода из курса');
+    }
+>>>>>>> main
   };
 
   const copyInviteLink = (code: string) => {
