@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PostDto, CourseRole, PostType } from '../../types/api';
 import { FileDto } from '../../types';
@@ -101,7 +101,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     if (window.confirm('Вы уверены, что хотите удалить этот пост?')) {
       try {
         await postsService.deletePost(courseId, postId);
-        setPosts(posts.filter(p => p.id !== postId));
+        setPosts(posts.filter((p) => p.id !== postId));
       } catch (err: any) {
         console.error('Failed to delete post:', err);
         alert(err.message || 'Ошибка удаления поста');
@@ -114,21 +114,16 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       setTitleError('Введите название поста');
       return;
     }
+
     setTitleError('');
+
     if (postForm.type === 'TASK' && postForm.deadline && new Date(postForm.deadline).getTime() < Date.now()) {
       setDeadlineError('Срок сдачи задания не может быть в прошлом');
       return;
     }
-<<<<<<< development
+
     setDeadlineError('');
-=======
 
-    if (postForm.type === 'TASK' && postForm.deadline && new Date(postForm.deadline) < new Date()) {
-      alert('Срок сдачи не может быть указан в прошедшем времени');
-      return;
-    }
-
->>>>>>> main
     try {
       if (editingPost) {
         const updatedPost = await postsService.updatePost(courseId, editingPost.id, {
@@ -136,7 +131,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           content: postForm.content || undefined,
           deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
         });
-        setPosts(posts.map(p => (p.id === editingPost.id ? updatedPost : p)));
+        setPosts(posts.map((p) => (p.id === editingPost.id ? updatedPost : p)));
       } else {
         const newPost = await postsService.createPost(courseId, {
           title: postForm.title,
@@ -204,7 +199,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     try {
       setLoadingMaterialsPostId(postId);
       const files = await postsService.listPostMaterials(courseId, postId);
-      setPostMaterials(prev => ({ ...prev, [postId]: files }));
+      setPostMaterials((prev) => ({ ...prev, [postId]: files }));
       setExpandedPost(postId);
     } catch (err: any) {
       console.error('Failed to load post materials:', err);
@@ -232,7 +227,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
       console.error('Failed to download material:', err);
-      alert(err.message || 'Не удалось скачать файл');
+      alert(err.message || 'Не удалось загрузить файл');
     }
   };
 
@@ -270,7 +265,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
             </p>
           </div>
         ) : (
-          posts.map(post => (
+          posts.map((post) => (
             <div
               key={post.id}
               className={`post-card ${post.type === 'TASK' ? 'clickable' : ''}`}
@@ -346,12 +341,12 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                       <div className="post-materials-status">Загрузка материалов...</div>
                     )}
                     {postMaterials[post.id] && postMaterials[post.id].length > 0 && (
-                      postMaterials[post.id].map(file => (
+                      postMaterials[post.id].map((file) => (
                         <button
                           key={file.id}
                           type="button"
                           className="post-material-item"
-                          onClick={event => handleDownloadMaterial(post.id, file, event)}
+                          onClick={(event) => handleDownloadMaterial(post.id, file, event)}
                         >
                           <span className="post-material-icon">📎</span>
                           <span className="post-material-name">{file.originalName}</span>
@@ -370,7 +365,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                   {post.materialsCount > 0 && (
                     <span
                       className="stat-item stat-item-materials"
-                      onClick={event => {
+                      onClick={(event) => {
                         event.stopPropagation();
                         handleToggleMaterials(post.id);
                       }}
@@ -383,7 +378,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                   )}
                   <span
                     className="stat-item stat-item-comments"
-                    onClick={event => {
+                    onClick={(event) => {
                       event.stopPropagation();
                       setSelectedPostId(post.id);
                       functions.handleIsOpenPublicComments(true);
@@ -411,7 +406,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 
       {showCreatePost && (
         <div className="modal-overlay" onClick={() => setShowCreatePost(false)}>
-          <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingPost ? 'Редактировать пост' : 'Создать пост'}</h2>
               <button className="close-button" onClick={() => setShowCreatePost(false)}>
@@ -427,7 +422,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                 <select
                   id="post-type"
                   value={postForm.type}
-                  onChange={e => setPostForm({ ...postForm, type: e.target.value as PostType })}
+                  onChange={(e) => setPostForm({ ...postForm, type: e.target.value as PostType })}
                   data-testid="post-type-select"
                 >
                   <option value="MATERIAL">Материал</option>
@@ -441,7 +436,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                   id="post-title"
                   type="text"
                   value={postForm.title}
-                  onChange={e => {
+                  onChange={(e) => {
                     setPostForm({ ...postForm, title: e.target.value });
                     setTitleError('');
                   }}
@@ -460,7 +455,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                 <textarea
                   id="post-content"
                   value={postForm.content}
-                  onChange={e => setPostForm({ ...postForm, content: e.target.value })}
+                  onChange={(e) => setPostForm({ ...postForm, content: e.target.value })}
                   placeholder="Введите описание поста"
                   rows={6}
                   data-testid="post-content-input"
@@ -474,7 +469,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                     id="post-deadline"
                     type="datetime-local"
                     value={postForm.deadline}
-                    onChange={e => {
+                    onChange={(e) => {
                       setPostForm({ ...postForm, deadline: e.target.value });
                       setDeadlineError('');
                     }}
@@ -556,7 +551,6 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           errorsCreateCommentForm={state.errorsCreateCommentForm}
           createPublicComment={functions.createPublicComment}
           onCommentCreated={loadPosts}
-<<<<<<< development
           deleteComments={functions.deleteComments}
           editPublicComment={functions.editPublicComment}
           setIsEditComment={functions.setIsEditComment}
@@ -564,8 +558,6 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           errorsEditCommentForm={state.errorsEditCommentForm}
           editCommentForm={state.editCommentForm}
           handleChangeEditComment={functions.handleChangeEditComment}
-=======
->>>>>>> main
         />
       )}
     </div>
@@ -573,7 +565,3 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 };
 
 export default StreamTab;
-
-
-
-

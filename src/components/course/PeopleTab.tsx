@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './PeopleTab.css';
 import { MemberDto, InviteDto, CourseRole } from '../../types/api';
 import { membersService, invitesService, coursesService } from '../../api/services';
@@ -62,7 +62,11 @@ const mergeInviteExpirations = (invite: InviteDto): InviteDto => {
   return storedExpiration ? { ...invite, expiresAt: storedExpiration } : invite;
 };
 
-export const loadMembersFunc = async (setLoading: React.Dispatch<React.SetStateAction<boolean>>, courseId: string, setMembers: React.Dispatch<React.SetStateAction<MemberDto[]>>) => {
+export const loadMembersFunc = async (
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  courseId: string,
+  setMembers: React.Dispatch<React.SetStateAction<MemberDto[]>>
+) => {
   try {
     setLoading(true);
     const response = await membersService.listMembers(courseId);
@@ -82,7 +86,7 @@ export const handleLeaveCourseFunc = async (courseId: string) => {
 
   try {
     await coursesService.leaveCourse(courseId);
-    window.location.href = '/courses';
+    window.location.href = '/main';
   } catch (err: any) {
     console.error('Failed to leave course:', err);
     alert(err.message || 'Ошибка выхода из курса');
@@ -132,13 +136,13 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
         expiresAt: expiresAt.toISOString()
       });
 
-<<<<<<< development
-      const derivedExpiration = getDerivedExpiration(createdInvite.createdAt || new Date().toISOString(), inviteExpiresIn);
+      const derivedExpiration = getDerivedExpiration(
+        createdInvite.createdAt || new Date().toISOString(),
+        inviteExpiresIn
+      );
+
       persistInviteExpiration(createdInvite.id, createdInvite.expiresAt || derivedExpiration);
       await loadInvites();
-=======
-      setInvites([...invites, newInvite]);
->>>>>>> main
       setShowCreateInvite(false);
       setInviteRole('STUDENT');
       setInviteMaxUses(1);
@@ -157,7 +161,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
     try {
       await invitesService.revokeInvite(courseId, inviteId);
       persistInviteExpiration(inviteId, null);
-      setInvites(invites.filter(i => i.id !== inviteId));
+      setInvites(invites.filter((i) => i.id !== inviteId));
     } catch (err: any) {
       console.error('Failed to delete invite:', err);
       alert(err.message || 'Ошибка удаления приглашения');
@@ -171,30 +175,15 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
 
     try {
       await membersService.removeMember(courseId, userId);
-      setMembers(members.filter(m => m.user.id !== userId));
+      setMembers(members.filter((m) => m.user.id !== userId));
     } catch (err: any) {
       console.error('Failed to remove member:', err);
       alert(err.message || 'Ошибка удаления участника');
     }
   };
 
-<<<<<<< development
   const handleLeaveCourse = () => {
     handleLeaveCourseFunc(courseId);
-=======
-  const handleLeaveCourse = async () => {
-    if (!window.confirm('Вы уверены, что хотите покинуть курс?')) {
-      return;
-    }
-
-    try {
-      await coursesService.leaveCourse(courseId);
-      window.location.href = '/main';
-    } catch (err: any) {
-      console.error('Failed to leave course:', err);
-      alert(err.message || 'Ошибка выхода из курса');
-    }
->>>>>>> main
   };
 
   const copyInviteLink = (code: string) => {
@@ -202,13 +191,13 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
     alert('Код приглашения скопирован в буфер обмена!');
   };
 
-  const filteredMembers = members.filter(member => {
+  const filteredMembers = members.filter((member) => {
     if (filter === 'ALL') return true;
     return member.role === filter;
   });
 
-  const teachers = members.filter(m => m.role === 'TEACHER');
-  const students = members.filter(m => m.role === 'STUDENT');
+  const teachers = members.filter((m) => m.role === 'TEACHER');
+  const students = members.filter((m) => m.role === 'STUDENT');
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -264,7 +253,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
           </div>
         ) : (
           <div className="members-list">
-            {filteredMembers.map(member => (
+            {filteredMembers.map((member) => (
               <div key={member.user.id} className="member-card">
                 <div className="member-avatar">
                   {member.user.displayName.charAt(0)}
@@ -378,7 +367,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
             </div>
           ) : (
             <div className="invites-list">
-              {invites.map(invite => {
+              {invites.map((invite) => {
                 const isExpired = invite.expiresAt ? new Date(invite.expiresAt) < new Date() : false;
                 const isExhausted = invite.maxUses !== null && invite.currentUses >= invite.maxUses;
                 const isActive = !isExpired && !isExhausted;
@@ -398,7 +387,7 @@ export default function PeopleTab({ courseId, userRole }: PeopleTabProps) {
                       </div>
                       {!isActive && (
                         <div className="invite-status">
-                          {isExpired ? '⏰ Истёк срок действия' : '✓ Все использования исчерпаны'}
+                          {isExpired ? '⏰ Истек срок действия' : '✅ Все использования исчерпаны'}
                         </div>
                       )}
                     </div>

@@ -205,9 +205,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         if (!courseId || !taskId || !selectedSolution) return;
 
         try {
-            await solutionsService.gradeSolution(courseId, taskId, selectedSolution.id, {
-                grade: null,
-            });
+            await solutionsService.removeGrade(courseId, taskId, selectedSolution.id);
 
             await loadSolutions();
             setShowGradeModal(false);

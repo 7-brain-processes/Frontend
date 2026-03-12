@@ -5,6 +5,7 @@ import { getSolution } from './getSolution';
 import { updateSolution } from './updateSolution';
 import { deleteSolution } from './deleteSolution';
 import { gradeSolution } from './gradeSolution';
+import { removeGrade } from './removeGrade';
 import { listSolutionFiles } from './listSolutionFiles';
 import { uploadSolutionFile } from './uploadSolutionFile';
 import { deleteSolutionFile } from './deleteSolutionFile';
@@ -21,6 +22,7 @@ export { getSolution } from './getSolution';
 export { updateSolution } from './updateSolution';
 export { deleteSolution } from './deleteSolution';
 export { gradeSolution } from './gradeSolution';
+export { removeGrade } from './removeGrade';
 export { listSolutionFiles } from './listSolutionFiles';
 export { uploadSolutionFile } from './uploadSolutionFile';
 export { deleteSolutionFile } from './deleteSolutionFile';
@@ -38,6 +40,7 @@ export const solutionsService = {
   updateSolution,
   deleteSolution,
   gradeSolution,
+  removeGrade,
   listSolutionFiles,
   uploadSolutionFile,
   deleteSolutionFile,

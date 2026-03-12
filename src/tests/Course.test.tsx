@@ -437,7 +437,7 @@ describe('Тестирование курсов', () => {
     await handleLeaveCourseFunc('1');
 
     expect(mockedCoursesService.leaveCourse).toHaveBeenCalledWith('1');
-    expect(window.location.href).toBe('/courses');
+    expect(window.location.href).toBe('/main');
 
     Object.defineProperty(window, 'location', {
       configurable: true,

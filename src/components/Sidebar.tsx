@@ -37,7 +37,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
       ),
       label: 'Курсы',
       testId: 'sidebar-courses',
-<<<<<<< development
       active: false,
       expandable: true,
     },
@@ -52,11 +51,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
       testId: 'sidebar-assignments',
       active: location.pathname === '/assignments',
     },
-=======
-      active: true,
-      expandable: true
-    }
->>>>>>> main
   ];
 
   return (
@@ -78,13 +72,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                   if (item.id === 'home') {
                     navigate('/main');
                   }
-<<<<<<< development
 
                   if (item.id === 'assignments') {
                     navigate('/assignments');
                   }
-=======
->>>>>>> main
                 }}
               >
                 <span className="sidebar-icon">{item.icon}</span>

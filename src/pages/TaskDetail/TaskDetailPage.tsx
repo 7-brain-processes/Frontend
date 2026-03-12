@@ -6,7 +6,7 @@ import { CourseRole } from '../../types/api';
 import './TaskDetailPage.css';
 
 const TaskDetailPage = () => {
-  const { courseId, taskId } = useParams<{ courseId: string; taskId: string }>();
+  const { courseId } = useParams<{ courseId: string; taskId: string }>();
   const [userRole, setUserRole] = useState<CourseRole>('STUDENT');
   const [loadingRole, setLoadingRole] = useState(true);
 
@@ -98,7 +98,6 @@ const TaskDetailPage = () => {
                 <p>{state.task.content}</p>
               </div>
             )}
-
           </div>
         </div>
 
@@ -145,7 +144,6 @@ const TaskDetailPage = () => {
                       Оценка: {state.mySolution.grade} / 100
                     </div>
                   )}
-<<<<<<< development
                   <div className="solution-comments-block">
                     <h4>Комментарии преподавателя</h4>
                     {state.mySolutionComments.length === 0 ? (
@@ -172,21 +170,13 @@ const TaskDetailPage = () => {
                     )}
                   </div>
                   {state.mySolution.grade === null && state.mySolution.status !== 'GRADED' && (
-                    <button 
+                    <button
                       className="btn-cancel-submit"
                       onClick={functions.handleCancelSubmit}
                     >
                       Отменить отправку
                     </button>
                   )}
-=======
-                  <button
-                    className="btn-cancel-submit"
-                    onClick={functions.handleCancelSubmit}
-                  >
-                    Отменить отправку
-                  </button>
->>>>>>> main
                 </div>
               ) : state.showSubmitForm ? (
                 <div className="sidebar-content">
@@ -267,108 +257,109 @@ const TaskDetailPage = () => {
                   const lateSubmission = isLateSolution(solution.submittedAt);
 
                   return (
-                  <div key={solution.id} className={`solution-card ${lateSubmission ? 'late' : ''}`}>
-                    <div className="solution-header">
-                      <div className="student-info">
-                        <div className="student-avatar">
-                          {solution.student.displayName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="student-name">{solution.student.displayName}</div>
-                          <div className="solution-date">
-                            {new Date(solution.submittedAt).toLocaleDateString('ru-RU', {
-                              day: 'numeric',
-                              month: 'long',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                            {lateSubmission && <span className="late-submission-text"> • После срока</span>}
+                    <div key={solution.id} className={`solution-card ${lateSubmission ? 'late' : ''}`}>
+                      <div className="solution-header">
+                        <div className="student-info">
+                          <div className="student-avatar">
+                            {solution.student.displayName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="student-name">{solution.student.displayName}</div>
+                            <div className="solution-date">
+                              {new Date(solution.submittedAt).toLocaleDateString('ru-RU', {
+                                day: 'numeric',
+                                month: 'long',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                              {lateSubmission && <span className="late-submission-text"> • После срока</span>}
+                            </div>
                           </div>
                         </div>
+                        {lateSubmission && (
+                          <span className="late-submission-badge">Сдано с опозданием</span>
+                        )}
                       </div>
-                      {lateSubmission && (
-                        <span className="late-submission-badge">Сдано с опозданием</span>
+                      {solution.text && (
+                        <div className="solution-text">
+                          <p>{solution.text}</p>
+                        </div>
                       )}
-                    </div>
-                    {solution.text && (
-                      <div className="solution-text">
-                        <p>{solution.text}</p>
-                      </div>
-                    )}
-                    {solution.filesCount > 0 && state.solutionFiles[solution.id] && state.solutionFiles[solution.id].length > 0 && (
-                      <div className="solution-files-list">
-                        {state.solutionFiles[solution.id].map((file) => (
-                          <div
-                            key={file.id}
-                            className="solution-file-item"
-                            onClick={() => functions.handleDownloadSolutionFile(solution.id, file.id, file.originalName)}
-                          >
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-                            </svg>
-                            <span className="file-name">{file.originalName}</span>
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" className="download-icon">
-                              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-                            </svg>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="solution-meta">
-                      {solution.grade !== null && (
-                        <span className="grade-value">{solution.grade}</span>
-                      )}
-                      <button
-                        className="btn-secondary btn-edit-grade"
-                        onClick={() => functions.handleOpenGradeModal(solution)}
-                      >
-                        {solution.grade !== null ? 'Изменить' : 'Оценить'}
-                      </button>
-                    </div>
-                    <div className="solution-comments-block">
-                      <h4>Комментарии к работе</h4>
-                      {state.solutionComments[solution.id]?.length ? (
-                        <div className="solution-comments-list">
-                          {state.solutionComments[solution.id].map((comment) => (
-                            <div key={comment.id} className="solution-comment-item">
-                              <div className="solution-comment-meta">
-                                <strong>{comment.author.displayName}</strong>
-                                <span>
-                                  {new Date(comment.createdAt).toLocaleDateString('ru-RU', {
-                                    day: 'numeric',
-                                    month: 'long',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </span>
-                              </div>
-                              <div className="solution-comment-text">{comment.text}</div>
+                      {solution.filesCount > 0 && state.solutionFiles[solution.id] && state.solutionFiles[solution.id].length > 0 && (
+                        <div className="solution-files-list">
+                          {state.solutionFiles[solution.id].map((file) => (
+                            <div
+                              key={file.id}
+                              className="solution-file-item"
+                              onClick={() => functions.handleDownloadSolutionFile(solution.id, file.id, file.originalName)}
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                              </svg>
+                              <span className="file-name">{file.originalName}</span>
+                              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" className="download-icon">
+                                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                              </svg>
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <div className="solution-comments-empty">Комментариев пока нет</div>
                       )}
-                      <div className="solution-comment-form">
-                        <textarea
-                          value={state.commentInputs[solution.id] || ''}
-                          onChange={(e) => functions.handleCommentInputChange(solution.id, e.target.value)}
-                          placeholder="Напишите комментарий к решению"
-                          rows={3}
-                          className="solution-comment-textarea"
-                        />
+
+                      <div className="solution-meta">
+                        {solution.grade !== null && (
+                          <span className="grade-value">{solution.grade}</span>
+                        )}
                         <button
-                          className="btn-primary btn-comment"
-                          onClick={() => functions.handleCreateSolutionComment(solution.id)}
-                          disabled={state.submittingCommentId === solution.id}
+                          className="btn-secondary btn-edit-grade"
+                          onClick={() => functions.handleOpenGradeModal(solution)}
                         >
-                          {state.submittingCommentId === solution.id ? 'Отправка...' : 'Добавить комментарий'}
+                          {solution.grade !== null ? 'Изменить' : 'Оценить'}
                         </button>
                       </div>
+                      <div className="solution-comments-block">
+                        <h4>Комментарии к работе</h4>
+                        {state.solutionComments[solution.id]?.length ? (
+                          <div className="solution-comments-list">
+                            {state.solutionComments[solution.id].map((comment) => (
+                              <div key={comment.id} className="solution-comment-item">
+                                <div className="solution-comment-meta">
+                                  <strong>{comment.author.displayName}</strong>
+                                  <span>
+                                    {new Date(comment.createdAt).toLocaleDateString('ru-RU', {
+                                      day: 'numeric',
+                                      month: 'long',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                                <div className="solution-comment-text">{comment.text}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="solution-comments-empty">Комментариев пока нет</div>
+                        )}
+                        <div className="solution-comment-form">
+                          <textarea
+                            value={state.commentInputs[solution.id] || ''}
+                            onChange={(e) => functions.handleCommentInputChange(solution.id, e.target.value)}
+                            placeholder="Напишите комментарий к решению"
+                            rows={3}
+                            className="solution-comment-textarea"
+                          />
+                          <button
+                            className="btn-primary btn-comment"
+                            onClick={() => functions.handleCreateSolutionComment(solution.id)}
+                            disabled={state.submittingCommentId === solution.id}
+                          >
+                            {state.submittingCommentId === solution.id ? 'Отправка...' : 'Добавить комментарий'}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )})}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -406,7 +397,6 @@ const TaskDetailPage = () => {
               </div>
             </div>
             <div className="modal-footer">
-<<<<<<< development
               {state.selectedSolution.grade !== null && (
                 <button
                   className="btn-secondary"
@@ -415,10 +405,7 @@ const TaskDetailPage = () => {
                   Снять оценку
                 </button>
               )}
-              <button 
-=======
               <button
->>>>>>> main
                 className="btn-secondary"
                 onClick={() => functions.setShowGradeModal(false)}
               >
