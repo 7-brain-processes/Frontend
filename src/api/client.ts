@@ -1,4 +1,5 @@
 const API_BASE_URL = '/api/v1';
+const NOT_FOUND_ROUTE = '/404';
 
 export const getAuthToken = (): string | null => {
   return localStorage.getItem('token');
@@ -10,6 +11,23 @@ export const setAuthToken = (token: string): void => {
 
 export const removeAuthToken = (): void => {
   localStorage.removeItem('token');
+};
+
+const shouldRedirectToNotFound = (status: number, endpoint: string): boolean => {
+  if (status !== 401 && status !== 403) {
+    return false;
+  }
+
+  if (endpoint.startsWith('/auth/')) {
+    return false;
+  }
+
+  const currentPath = window.location.pathname;
+  return currentPath !== '/login' && currentPath !== '/registration' && currentPath !== NOT_FOUND_ROUTE;
+};
+
+const redirectToNotFound = () => {
+  window.location.replace(NOT_FOUND_ROUTE);
 };
 
 export const apiRequest = async <T>(
@@ -34,6 +52,11 @@ export const apiRequest = async <T>(
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
   if (!response.ok) {
+    if (shouldRedirectToNotFound(response.status, endpoint)) {
+      redirectToNotFound();
+      throw new Error('Access denied');
+    }
+
     const error = await response.json().catch(() => ({
       message: `HTTP error! status: ${response.status}`,
     }));
@@ -65,6 +88,11 @@ export const uploadFile = async <T>(
   });
 
   if (!response.ok) {
+    if (shouldRedirectToNotFound(response.status, endpoint)) {
+      redirectToNotFound();
+      throw new Error('Access denied');
+    }
+
     const error = await response.json().catch(() => ({
       message: `HTTP error! status: ${response.status}`,
     }));
@@ -88,6 +116,11 @@ export const downloadFile = async (endpoint: string): Promise<Blob> => {
   });
 
   if (!response.ok) {
+    if (shouldRedirectToNotFound(response.status, endpoint)) {
+      redirectToNotFound();
+      throw new Error('Access denied');
+    }
+
     throw new Error('File download failed');
   }
 

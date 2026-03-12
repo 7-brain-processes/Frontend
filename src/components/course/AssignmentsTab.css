@@ -448,6 +448,11 @@
   background: #fafafa;
 }
 
+.solution-card.late {
+  border-color: #d93025;
+  background: #fce8e6;
+}
+
 .solution-student {
   display: flex;
   align-items: center;
@@ -482,6 +487,23 @@
 .solution-date {
   font-size: 13px;
   color: #5f6368;
+}
+
+.late-submission-text {
+  color: #d93025;
+  font-weight: 500;
+}
+
+.late-submission-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: #d93025;
+  color: white;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .solution-content {
@@ -545,6 +567,21 @@
 
 .grade-form button:hover {
   background: #1557B0;
+}
+
+.remove-grade-button {
+  padding: 8px 14px;
+  background: transparent;
+  color: #d93025;
+  border: 1px solid #f2b8b5;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.remove-grade-button:hover {
+  background: #fce8e6;
 }
 
 .empty-state {

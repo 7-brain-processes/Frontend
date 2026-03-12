@@ -21,6 +21,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<PostDto | null>(null);
+  const [deadlineError, setDeadlineError] = useState('');
   const [assignmentForm, setAssignmentForm] = useState({
     title: '',
     content: '',
@@ -30,6 +31,29 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   useEffect(() => {
     loadAssignments();
   }, [courseId]);
+
+  const toDateTimeLocal = (isoString: string | undefined | null): string => {
+    if (!isoString) return '';
+
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const getMinDateTimeLocal = (): string => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   const loadAssignments = async () => {
     try {
@@ -82,6 +106,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       return;
     }
 
+
+
     try {
       const newSolution = await solutionsService.createSolution(courseId, selectedAssignment.id, {
         text: solutionText,
@@ -108,7 +134,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     }
   };
 
-  const handleGradeSolution = async (solutionId: string, grade: number) => {
+  const handleGradeSolution = async (solutionId: string, grade: number | null) => {
     if (!selectedAssignment || userRole !== 'TEACHER') return;
 
     try {
@@ -126,6 +152,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   const handleCreateAssignment = () => {
     setEditingAssignment(null);
     setAssignmentForm({ title: '', content: '', deadline: '' });
+    setDeadlineError('');
     setShowCreateAssignment(true);
   };
 
@@ -134,8 +161,9 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     setAssignmentForm({
       title: assignment.title,
       content: assignment.content || '',
-      deadline: assignment.deadline || ''
+      deadline: toDateTimeLocal(assignment.deadline)
     });
+    setDeadlineError('');
     setShowCreateAssignment(true);
   };
 
@@ -159,17 +187,19 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       alert('Введите название задания');
       return;
     }
-    if (!assignmentForm.deadline) {
-      alert('Укажите срок сдачи');
+    if (assignmentForm.deadline && new Date(assignmentForm.deadline).getTime() < Date.now()) {
+      setDeadlineError('Срок сдачи задания не может быть в прошлом');
       return;
     }
+
+    setDeadlineError('');
 
     try {
       if (editingAssignment) {
         const updatedPost = await postsService.updatePost(courseId, editingAssignment.id, {
           title: assignmentForm.title,
           content: assignmentForm.content || undefined,
-          deadline: assignmentForm.deadline,
+          deadline: assignmentForm.deadline ? new Date(assignmentForm.deadline).toISOString() : undefined,
         });
         setAssignments(assignments.map(a => (a.id === editingAssignment.id ? updatedPost : a)));
       } else {
@@ -177,7 +207,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
           title: assignmentForm.title,
           content: assignmentForm.content || undefined,
           type: 'TASK',
-          deadline: assignmentForm.deadline,
+          deadline: assignmentForm.deadline ? new Date(assignmentForm.deadline).toISOString() : undefined,
         });
         setAssignments([...assignments, newPost]);
       }
@@ -211,6 +241,14 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       text: date.toLocaleDateString('ru-RU', options),
       isPast
     };
+  };
+
+  const isLateSolution = (submittedAt: string, deadline: string | null) => {
+    if (!deadline) {
+      return false;
+    }
+
+    return new Date(submittedAt).getTime() > new Date(deadline).getTime();
   };
 
   const openAssignment = (assignment: PostDto) => {
@@ -320,15 +358,17 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                   </div>
                 )}
 
-                <button 
-                  className="edit-solution-button"
-                  onClick={() => {
-                    setSolutionText(mySolution.text);
-                    setShowSubmitForm(true);
-                  }}
-                >
-                  Изменить решение
-                </button>
+                {mySolution.grade === null && mySolution.status !== 'GRADED' && (
+                  <button 
+                    className="edit-solution-button"
+                    onClick={() => {
+                      setSolutionText(mySolution.text);
+                      setShowSubmitForm(true);
+                    }}
+                  >
+                    Изменить решение
+                  </button>
+                )}
               </div>
             ) : showSubmitForm ? (
               <div className="submit-form">
@@ -403,8 +443,11 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
               </div>
             ) : (
               <div className="solutions-list">
-                {solutions.map(solution => (
-                  <div key={solution.id} className="solution-card">
+                {solutions.map(solution => {
+                  const lateSubmission = isLateSolution(solution.submittedAt, selectedAssignment.deadline);
+
+                  return (
+                  <div key={solution.id} className={`solution-card ${lateSubmission ? 'late' : ''}`}>
                     <div className="solution-student">
                       <div className="student-avatar">
                         {solution.student.displayName.charAt(0)}
@@ -413,11 +456,15 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                         <div className="student-name">{solution.student.displayName}</div>
                         <div className="solution-date">
                           Сдано: {new Date(solution.submittedAt).toLocaleDateString('ru-RU')}
+                          {lateSubmission && <span className="late-submission-text"> • После срока</span>}
                         </div>
                       </div>
                       <span className={`status-badge ${solution.status.toLowerCase()}`}>
                         {solution.status === 'SUBMITTED' ? 'Сдано' : 'Оценено'}
                       </span>
+                      {lateSubmission && (
+                        <span className="late-submission-badge">Сдано с опозданием</span>
+                      )}
                     </div>
 
                     <div className="solution-content">
@@ -437,6 +484,13 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                             {new Date(solution.gradedAt).toLocaleDateString('ru-RU')}
                           </span>
                         )}
+                        <button
+                          type="button"
+                          className="remove-grade-button"
+                          onClick={() => handleGradeSolution(solution.id, null)}
+                        >
+                          Снять оценку
+                        </button>
                       </div>
                     ) : (
                       <div className="grade-form">
@@ -468,7 +522,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                       </div>
                     )}
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </div>
@@ -595,14 +649,23 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
               </div>
 
               <div className="form-group">
-                <label htmlFor="assignment-deadline">Срок сдачи *</label>
+                <label htmlFor="assignment-deadline">Срок сдачи</label>
                 <input
                   id="assignment-deadline"
                   type="datetime-local"
                   value={assignmentForm.deadline}
-                  onChange={e => setAssignmentForm({ ...assignmentForm, deadline: e.target.value })}
+                  onChange={e => {
+                    setAssignmentForm({ ...assignmentForm, deadline: e.target.value });
+                    setDeadlineError('');
+                  }}
+                  min={getMinDateTimeLocal()}
                   data-testid="assignment-deadline-input"
                 />
+                {deadlineError && (
+                  <div style={{ color: '#d32f2f', fontSize: '14px', marginTop: '8px' }} data-testid="assignment-deadline-error">
+                    {deadlineError}
+                  </div>
+                )}
               </div>
             </div>
 

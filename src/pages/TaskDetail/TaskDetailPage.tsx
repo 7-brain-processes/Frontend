@@ -45,6 +45,13 @@ const TaskDetailPage = () => {
   }
 
   const deadline = state.task.deadline ? functions.formatDeadline(state.task.deadline) : null;
+  const isLateSolution = (submittedAt: string) => {
+    if (!state.task?.deadline) {
+      return false;
+    }
+
+    return new Date(submittedAt).getTime() > new Date(state.task.deadline).getTime();
+  };
 
   return (
     <div className="task-detail-page">
@@ -138,12 +145,48 @@ const TaskDetailPage = () => {
                       Оценка: {state.mySolution.grade} / 100
                     </div>
                   )}
+<<<<<<< development
+                  <div className="solution-comments-block">
+                    <h4>Комментарии преподавателя</h4>
+                    {state.mySolutionComments.length === 0 ? (
+                      <div className="solution-comments-empty">Комментариев нет</div>
+                    ) : (
+                      <div className="solution-comments-list">
+                        {state.mySolutionComments.map((comment) => (
+                          <div key={comment.id} className="solution-comment-item">
+                            <div className="solution-comment-meta">
+                              <strong>{comment.author.displayName}</strong>
+                              <span>
+                                {new Date(comment.createdAt).toLocaleDateString('ru-RU', {
+                                  day: 'numeric',
+                                  month: 'long',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                            <div className="solution-comment-text">{comment.text}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {state.mySolution.grade === null && state.mySolution.status !== 'GRADED' && (
+                    <button 
+                      className="btn-cancel-submit"
+                      onClick={functions.handleCancelSubmit}
+                    >
+                      Отменить отправку
+                    </button>
+                  )}
+=======
                   <button
                     className="btn-cancel-submit"
                     onClick={functions.handleCancelSubmit}
                   >
                     Отменить отправку
                   </button>
+>>>>>>> main
                 </div>
               ) : state.showSubmitForm ? (
                 <div className="sidebar-content">
@@ -220,8 +263,11 @@ const TaskDetailPage = () => {
               </div>
             ) : (
               <div className="solutions-list">
-                {state.solutions.map((solution) => (
-                  <div key={solution.id} className="solution-card">
+                {state.solutions.map((solution) => {
+                  const lateSubmission = isLateSolution(solution.submittedAt);
+
+                  return (
+                  <div key={solution.id} className={`solution-card ${lateSubmission ? 'late' : ''}`}>
                     <div className="solution-header">
                       <div className="student-info">
                         <div className="student-avatar">
@@ -236,9 +282,13 @@ const TaskDetailPage = () => {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}
+                            {lateSubmission && <span className="late-submission-text"> • После срока</span>}
                           </div>
                         </div>
                       </div>
+                      {lateSubmission && (
+                        <span className="late-submission-badge">Сдано с опозданием</span>
+                      )}
                     </div>
                     {solution.text && (
                       <div className="solution-text">
@@ -276,8 +326,49 @@ const TaskDetailPage = () => {
                         {solution.grade !== null ? 'Изменить' : 'Оценить'}
                       </button>
                     </div>
+                    <div className="solution-comments-block">
+                      <h4>Комментарии к работе</h4>
+                      {state.solutionComments[solution.id]?.length ? (
+                        <div className="solution-comments-list">
+                          {state.solutionComments[solution.id].map((comment) => (
+                            <div key={comment.id} className="solution-comment-item">
+                              <div className="solution-comment-meta">
+                                <strong>{comment.author.displayName}</strong>
+                                <span>
+                                  {new Date(comment.createdAt).toLocaleDateString('ru-RU', {
+                                    day: 'numeric',
+                                    month: 'long',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                              <div className="solution-comment-text">{comment.text}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="solution-comments-empty">Комментариев пока нет</div>
+                      )}
+                      <div className="solution-comment-form">
+                        <textarea
+                          value={state.commentInputs[solution.id] || ''}
+                          onChange={(e) => functions.handleCommentInputChange(solution.id, e.target.value)}
+                          placeholder="Напишите комментарий к решению"
+                          rows={3}
+                          className="solution-comment-textarea"
+                        />
+                        <button
+                          className="btn-primary btn-comment"
+                          onClick={() => functions.handleCreateSolutionComment(solution.id)}
+                          disabled={state.submittingCommentId === solution.id}
+                        >
+                          {state.submittingCommentId === solution.id ? 'Отправка...' : 'Добавить комментарий'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </div>
@@ -315,7 +406,19 @@ const TaskDetailPage = () => {
               </div>
             </div>
             <div className="modal-footer">
+<<<<<<< development
+              {state.selectedSolution.grade !== null && (
+                <button
+                  className="btn-secondary"
+                  onClick={functions.handleRemoveGrade}
+                >
+                  Снять оценку
+                </button>
+              )}
+              <button 
+=======
               <button
+>>>>>>> main
                 className="btn-secondary"
                 onClick={() => functions.setShowGradeModal(false)}
               >

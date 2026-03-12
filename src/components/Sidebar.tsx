@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Sidebar.css';
 import { Course, generateColor } from './CourseCard';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,8 +13,9 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses = [], onCourseClick }) => {
   const navigate = useNavigate();
-
+  const location = useLocation();
   const [coursesExpanded, setCoursesExpanded] = useState(true);
+
   const menuItems = [
     {
       id: 'home',
@@ -24,7 +25,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
         </svg>
       ),
       label: 'Главная страница',
-      testId: 'sidebar-home'
+      testId: 'sidebar-home',
+      active: location.pathname === '/main',
     },
     {
       id: 'courses',
@@ -35,9 +37,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
       ),
       label: 'Курсы',
       testId: 'sidebar-courses',
+<<<<<<< development
+      active: false,
+      expandable: true,
+    },
+    {
+      id: 'assignments',
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+        </svg>
+      ),
+      label: 'Список заданий',
+      testId: 'sidebar-assignments',
+      active: location.pathname === '/assignments',
+    },
+=======
       active: true,
       expandable: true
     }
+>>>>>>> main
   ];
 
   return (
@@ -55,9 +74,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                   if (item.expandable && !isCollapsed) {
                     setCoursesExpanded(!coursesExpanded);
                   }
+
                   if (item.id === 'home') {
                     navigate('/main');
                   }
+<<<<<<< development
+
+                  if (item.id === 'assignments') {
+                    navigate('/assignments');
+                  }
+=======
+>>>>>>> main
                 }}
               >
                 <span className="sidebar-icon">{item.icon}</span>
@@ -86,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isCollapsed, onClose, courses
                       <span
                         className="course-submenu-color"
                         style={{
-                          backgroundColor: generateColor(course.id)
+                          backgroundColor: generateColor(course.id),
                         }}
                       >
                         {course.name.charAt(0)}

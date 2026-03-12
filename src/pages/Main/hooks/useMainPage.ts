@@ -6,6 +6,47 @@ import { coursesService, joinCourse } from "../../../api/services";
 import { CourseDto } from "../../../types/api";
 import { getAuthToken } from "../../../api/client";
 
+export const createNewCourseFunc = async (validateCreateCourseForm: () => boolean, createCourseForm: CreateCourse, setIsOpenNewCourse: React.Dispatch<React.SetStateAction<boolean>>, setLoading: React.Dispatch<React.SetStateAction<boolean>>, setError: React.Dispatch<React.SetStateAction<string | null>>, setCourses: React.Dispatch<React.SetStateAction<CourseDto[]>>) => {
+    if (!validateCreateCourseForm()) return false;
+    try {
+        await coursesService.createCourse(createCourseForm);
+        setIsOpenNewCourse(false);
+        loadCoursesFunc(setLoading, setError, setCourses);
+    }
+    catch (error: any) {
+        console.error(error.message);
+        alert(`Ошибка: ${error.message}`);
+    }
+};
+
+export const joinToCourseFunc = async (validateJoinToCourseForm: () => boolean, joinToCourseForm: JoinToCourse, setIsOpenJoinCourse: React.Dispatch<React.SetStateAction<boolean>>, setLoading: React.Dispatch<React.SetStateAction<boolean>>, setError: React.Dispatch<React.SetStateAction<string | null>>, setCourses: React.Dispatch<React.SetStateAction<CourseDto[]>>) => {
+    if (!validateJoinToCourseForm()) return false;
+    try {
+        await joinCourse(joinToCourseForm.code);
+        setIsOpenJoinCourse(false);
+        loadCoursesFunc(setLoading, setError, setCourses);
+    }
+    catch (error: any) {
+        console.error(error.message);
+        alert(`Ошибка: ${error.message}`);
+    }
+};
+
+export const loadCoursesFunc = async (setLoading: React.Dispatch<React.SetStateAction<boolean>>, setError: React.Dispatch<React.SetStateAction<string | null>>, setCourses: React.Dispatch<React.SetStateAction<CourseDto[]>>) => {
+    try {
+        setLoading(true);
+        setError(null);
+        const response = await coursesService.listMyCourses();
+        setCourses(response.content);
+    } catch (err: any) {
+        console.error('Failed to load courses:', err);
+        setCourses([]);
+        setError(err.message || 'Ошибка загрузки курсов');
+    } finally {
+        setLoading(false);
+    }
+};
+
 export const useMainPage = () => {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,19 +72,8 @@ export const useMainPage = () => {
         loadCourses();
     }, []);
 
-    const loadCourses = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const response = await coursesService.listMyCourses();
-            setCourses(response.content);
-        } catch (err: any) {
-            console.error('Failed to load courses:', err);
-            setCourses([]);
-            setError(err.message || 'Ошибка загрузки курсов');
-        } finally {
-            setLoading(false);
-        }
+    const loadCourses = () => {
+        loadCoursesFunc(setLoading, setError, setCourses);
     };
 
     const handleMenuClick = () => {
@@ -120,30 +150,12 @@ export const useMainPage = () => {
         setJoinToCourseForm(prev => ({ ...prev, [name]: value }));
     };
 
-    const createNewCourse = async () => {
-        if (!validateCreateCourseForm()) return false;
-        try {
-            await coursesService.createCourse(createCourseForm);
-            setIsOpenNewCourse(false);
-            loadCourses();
-        }
-        catch (error: any) {
-            console.error(error.message);
-            alert(`Ошибка: ${error.message}`);
-        }
+    const createNewCourse = () => {
+        createNewCourseFunc(validateCreateCourseForm, createCourseForm, setIsOpenNewCourse, setLoading, setError, setCourses);
     };
 
-    const joinToCourseFunc = async () => {
-        if (!validateJoinToCourseForm()) return false;
-        try {
-            await joinCourse(joinToCourseForm.code);
-            setIsOpenJoinCourse(false);
-            loadCourses();
-        }
-        catch (error: any) {
-            console.error(error.message);
-            alert(`Ошибка: ${error.message}`);
-        }
+    const joinToCourse = () => {
+        joinToCourseFunc(validateJoinToCourseForm, joinToCourseForm, setIsOpenJoinCourse, setLoading, setError, setCourses);
     };
 
     return {
@@ -169,7 +181,7 @@ export const useMainPage = () => {
             handleChangeCreateCourse,
             handleChangeJoinCourse,
             createNewCourse,
-            joinToCourseFunc
+            joinToCourse
         }
     };
 };

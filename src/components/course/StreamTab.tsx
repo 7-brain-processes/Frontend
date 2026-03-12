@@ -30,6 +30,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [postMaterials, setPostMaterials] = useState<Record<string, FileDto[]>>({});
   const [loadingMaterialsPostId, setLoadingMaterialsPostId] = useState<string | null>(null);
+  const [titleError, setTitleError] = useState('');
+  const [deadlineError, setDeadlineError] = useState('');
 
   const toDateTimeLocal = (isoString: string | undefined | null): string => {
     if (!isoString) return '';
@@ -42,6 +44,16 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
+  const getMinDateTimeLocal = (): string => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   useEffect(() => {
     loadPosts();
   }, [courseId]);
@@ -50,7 +62,11 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     try {
       setLoading(true);
       const response = await postsService.listPosts(courseId);
-      setPosts(response.content);
+      setPosts(
+        [...response.content].sort(
+          (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+        )
+      );
     } catch (err: any) {
       console.error('Failed to load posts:', err);
       setPosts([]);
@@ -62,6 +78,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const handleCreatePost = () => {
     setEditingPost(null);
     setPostForm({ title: '', content: '', type: 'MATERIAL', deadline: '' });
+    setTitleError('');
+    setDeadlineError('');
     setSelectedFiles([]);
     setShowCreatePost(true);
   };
@@ -74,6 +92,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       type: post.type,
       deadline: toDateTimeLocal(post.deadline)
     });
+    setTitleError('');
+    setDeadlineError('');
     setShowCreatePost(true);
   };
 
@@ -91,20 +111,24 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 
   const handleSavePost = async () => {
     if (!postForm.title.trim()) {
-      alert('Введите название поста');
+      setTitleError('Введите название поста');
       return;
     }
-
-    if (postForm.type === 'TASK' && !postForm.deadline) {
-      alert('Для задания необходимо указать срок сдачи');
+    setTitleError('');
+    if (postForm.type === 'TASK' && postForm.deadline && new Date(postForm.deadline).getTime() < Date.now()) {
+      setDeadlineError('Срок сдачи задания не может быть в прошлом');
       return;
     }
+<<<<<<< development
+    setDeadlineError('');
+=======
 
     if (postForm.type === 'TASK' && postForm.deadline && new Date(postForm.deadline) < new Date()) {
       alert('Срок сдачи не может быть указан в прошедшем времени');
       return;
     }
 
+>>>>>>> main
     try {
       if (editingPost) {
         const updatedPost = await postsService.updatePost(courseId, editingPost.id, {
@@ -417,10 +441,18 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                   id="post-title"
                   type="text"
                   value={postForm.title}
-                  onChange={e => setPostForm({ ...postForm, title: e.target.value })}
+                  onChange={e => {
+                    setPostForm({ ...postForm, title: e.target.value });
+                    setTitleError('');
+                  }}
                   placeholder="Введите название поста"
                   data-testid="post-title-input"
                 />
+                {titleError && (
+                  <div style={{ color: '#d32f2f', fontSize: '14px', marginTop: '8px' }} data-testid="post-title-error">
+                    {titleError}
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
@@ -437,14 +469,23 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 
               {postForm.type === 'TASK' && (
                 <div className="form-group">
-                  <label htmlFor="post-deadline">Срок сдачи *</label>
+                  <label htmlFor="post-deadline">Срок сдачи</label>
                   <input
                     id="post-deadline"
                     type="datetime-local"
                     value={postForm.deadline}
-                    onChange={e => setPostForm({ ...postForm, deadline: e.target.value })}
+                    onChange={e => {
+                      setPostForm({ ...postForm, deadline: e.target.value });
+                      setDeadlineError('');
+                    }}
+                    min={getMinDateTimeLocal()}
                     data-testid="post-deadline-input"
                   />
+                  {deadlineError && (
+                    <div style={{ color: '#d32f2f', fontSize: '14px', marginTop: '8px' }} data-testid="post-deadline-error">
+                      {deadlineError}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -515,6 +556,16 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           errorsCreateCommentForm={state.errorsCreateCommentForm}
           createPublicComment={functions.createPublicComment}
           onCommentCreated={loadPosts}
+<<<<<<< development
+          deleteComments={functions.deleteComments}
+          editPublicComment={functions.editPublicComment}
+          setIsEditComment={functions.setIsEditComment}
+          isEditComment={state.isEditComment}
+          errorsEditCommentForm={state.errorsEditCommentForm}
+          editCommentForm={state.editCommentForm}
+          handleChangeEditComment={functions.handleChangeEditComment}
+=======
+>>>>>>> main
         />
       )}
     </div>
@@ -522,3 +573,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 };
 
 export default StreamTab;
+
+
+
+

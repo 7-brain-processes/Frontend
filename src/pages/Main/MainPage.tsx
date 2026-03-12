@@ -61,7 +61,7 @@ const MainPage = () => {
                 handleChangeJoinCourse={functions.handleChangeJoinCourse}
                 errorsJoinToCourseForm={state.errorsJoinToCourseForm}
                 joinToCourseForm={state.joinToCourseForm}
-                joinToCourse={functions.joinToCourseFunc}
+                joinToCourse={functions.joinToCourse}
             />
         </div>
     );

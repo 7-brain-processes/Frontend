@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { postsService, solutionsService } from "../../../api/services";
 import { listSolutionFiles, downloadSolutionFile, deleteSolution } from "../../../api/solutions";
-import { PostDto, SolutionDto, CourseRole, FileDto } from "../../../types/api";
+import { PostDto, SolutionDto, CourseRole, FileDto, CommentDto } from "../../../types/api";
 
 export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = false) => {
     const { courseId, taskId } = useParams<{ courseId: string; taskId: string }>();
@@ -13,6 +13,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [solutionFiles, setSolutionFiles] = useState<Record<string, FileDto[]>>({});
     const [mySolution, setMySolution] = useState<SolutionDto | null>(null);
     const [mySolutionFiles, setMySolutionFiles] = useState<FileDto[]>([]);
+    const [mySolutionComments, setMySolutionComments] = useState<CommentDto[]>([]);
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [solutionText, setSolutionText] = useState('');
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -21,6 +22,9 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [showGradeModal, setShowGradeModal] = useState(false);
     const [selectedSolution, setSelectedSolution] = useState<SolutionDto | null>(null);
     const [gradeValue, setGradeValue] = useState<number>(0);
+    const [solutionComments, setSolutionComments] = useState<Record<string, CommentDto[]>>({});
+    const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+    const [submittingCommentId, setSubmittingCommentId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!loadingRole) {
@@ -50,6 +54,20 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         }
     };
 
+    const loadCommentsForSolution = async (solutionId: string): Promise<CommentDto[]> => {
+        if (!courseId || !taskId) {
+            return [];
+        }
+
+        try {
+            const response = await solutionsService.listSolutionComments(courseId, taskId, solutionId, { size: 100 });
+            return response.content;
+        } catch (err) {
+            console.error(`Failed to load comments for solution ${solutionId}:`, err);
+            return [];
+        }
+    };
+
     const loadMySolution = async () => {
         if (!courseId || !taskId) return;
         
@@ -57,6 +75,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             const solution = await solutionsService.getMySolution(courseId, taskId);
             setMySolution(solution);
             setSolutionText(solution.text || '');
+            setMySolutionComments(await loadCommentsForSolution(solution.id));
             
             if (solution.filesCount > 0) {
                 try {
@@ -75,11 +94,13 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                 setMySolution(null);
                 setSolutionText('');
                 setMySolutionFiles([]);
+                setMySolutionComments([]);
             } else {
                 console.error('Failed to load my solution:', err);
                 setMySolution(null);
                 setSolutionText('');
                 setMySolutionFiles([]);
+                setMySolutionComments([]);
             }
         }
     };
@@ -93,6 +114,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             
             // Load files for each solution
             const filesMap: Record<string, FileDto[]> = {};
+            const commentsMap: Record<string, CommentDto[]> = {};
             for (const solution of response.content) {
                 if (solution.filesCount > 0) {
                     try {
@@ -105,12 +127,16 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                 } else {
                     filesMap[solution.id] = [];
                 }
+
+                commentsMap[solution.id] = await loadCommentsForSolution(solution.id);
             }
             setSolutionFiles(filesMap);
+            setSolutionComments(commentsMap);
         } catch (err: any) {
             console.error('Failed to load solutions:', err);
             setSolutions([]);
             setSolutionFiles({});
+            setSolutionComments({});
         }
     };
 
@@ -175,6 +201,23 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         }
     };
 
+    const handleRemoveGrade = async () => {
+        if (!courseId || !taskId || !selectedSolution) return;
+
+        try {
+            await solutionsService.gradeSolution(courseId, taskId, selectedSolution.id, {
+                grade: null,
+            });
+
+            await loadSolutions();
+            setShowGradeModal(false);
+            setSelectedSolution(null);
+        } catch (err: any) {
+            console.error('Failed to remove grade:', err);
+            alert(err.message || 'Ошибка снятия оценки');
+        }
+    };
+
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
             setSelectedFiles(Array.from(event.target.files));
@@ -184,6 +227,11 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const handleCancelSubmit = async () => {
         if (!courseId || !taskId || !mySolution) return;
 
+        if (mySolution.status === 'GRADED' || mySolution.grade !== null) {
+            alert('Оцененное решение нельзя удалить. Оценку можно только изменить.');
+            return;
+        }
+
         if (!window.confirm('Вы уверены, что хотите отменить отправку решения?')) {
             return;
         }
@@ -192,12 +240,42 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             await deleteSolution(courseId, taskId, mySolution.id);
             setMySolution(null);
             setMySolutionFiles([]);
+            setMySolutionComments([]);
             setSolutionText('');
             setSelectedFiles([]);
             setShowSubmitForm(false);
         } catch (err: any) {
             console.error('Failed to delete solution:', err);
             alert(err.message || 'Ошибка отмены отправки');
+        }
+    };
+
+    const handleCommentInputChange = (solutionId: string, text: string) => {
+        setCommentInputs(prev => ({ ...prev, [solutionId]: text }));
+    };
+
+    const handleCreateSolutionComment = async (solutionId: string) => {
+        if (!courseId || !taskId) return;
+
+        const text = commentInputs[solutionId]?.trim();
+        if (!text) {
+            alert('Введите текст комментария');
+            return;
+        }
+
+        try {
+            setSubmittingCommentId(solutionId);
+            const comment = await solutionsService.createSolutionComment(courseId, taskId, solutionId, { text });
+            setSolutionComments(prev => ({
+                ...prev,
+                [solutionId]: [...(prev[solutionId] || []), comment],
+            }));
+            setCommentInputs(prev => ({ ...prev, [solutionId]: '' }));
+        } catch (err: any) {
+            console.error('Failed to create solution comment:', err);
+            alert(err.message || 'Ошибка добавления комментария');
+        } finally {
+            setSubmittingCommentId(null);
         }
     };
 
@@ -231,6 +309,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             solutionFiles,
             mySolution,
             mySolutionFiles,
+            mySolutionComments,
             showSubmitForm,
             solutionText,
             selectedFiles,
@@ -239,6 +318,9 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             showGradeModal,
             selectedSolution,
             gradeValue,
+            solutionComments,
+            commentInputs,
+            submittingCommentId,
         },
         functions: {
             setShowSubmitForm,
@@ -249,6 +331,9 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             handleSubmitSolution,
             handleOpenGradeModal,
             handleGradeSolution,
+            handleRemoveGrade,
+            handleCommentInputChange,
+            handleCreateSolutionComment,
             handleFileSelect,
             handleCancelSubmit,
             handleBack,
