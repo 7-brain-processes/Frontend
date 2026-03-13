@@ -79,6 +79,7 @@ export const usePublicCommentsDialog = () => {
         text: ''
     });
     const [isEditComment, setIsEditComment] = useState<boolean>(false);
+    const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
 
     const handleIsOpenPublicComments = (isOpen: boolean) => {
         setIsOpenPublicComments(isOpen);
@@ -86,10 +87,29 @@ export const usePublicCommentsDialog = () => {
             text: ''
         });
         setErrorsCreateCommentForm({});
+        setErrorsEditCommentForm({});
+        setEditCommentForm({ text: '' });
+        setIsEditComment(false);
+        setEditingCommentId(null);
         if (!isOpen) {
             setPublicComments([]);
         }
     }
+
+    const startEditComment = (commentId: string, text: string) => {
+        if (isEditComment && editingCommentId === commentId) {
+            setIsEditComment(false);
+            setEditingCommentId(null);
+            setEditCommentForm({ text: '' });
+            setErrorsEditCommentForm({});
+            return;
+        }
+
+        setIsEditComment(true);
+        setEditingCommentId(commentId);
+        setEditCommentForm({ text });
+        setErrorsEditCommentForm({});
+    };
 
     const handleChangeCreateComment = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -146,7 +166,7 @@ export const usePublicCommentsDialog = () => {
     }
 
     return {
-        state: { isOpenPublicComments, publicComments, createCommentForm, errorsCreateCommentForm, isEditComment, errorsEditCommentForm, editCommentForm },
+        state: { isOpenPublicComments, publicComments, createCommentForm, errorsCreateCommentForm, isEditComment, errorsEditCommentForm, editCommentForm, editingCommentId },
         functions: {
             handleIsOpenPublicComments,
             getPublicComments,
@@ -155,7 +175,8 @@ export const usePublicCommentsDialog = () => {
             editPublicComment,
             deleteComments,
             setIsEditComment,
-            handleChangeEditComment
+            handleChangeEditComment,
+            startEditComment
         }
     }
 }

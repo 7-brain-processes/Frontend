@@ -29,6 +29,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const [expandedPost, setExpandedPost] = useState<string | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [postMaterials, setPostMaterials] = useState<Record<string, FileDto[]>>({});
+  const [editingPostMaterials, setEditingPostMaterials] = useState<FileDto[]>([]);
+  const [isLoadingEditingPostMaterials, setIsLoadingEditingPostMaterials] = useState(false);
   const [loadingMaterialsPostId, setLoadingMaterialsPostId] = useState<string | null>(null);
   const [titleError, setTitleError] = useState('');
   const [deadlineError, setDeadlineError] = useState('');
@@ -81,10 +83,12 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     setTitleError('');
     setDeadlineError('');
     setSelectedFiles([]);
+    setEditingPostMaterials([]);
+    setIsLoadingEditingPostMaterials(false);
     setShowCreatePost(true);
   };
 
-  const handleEditPost = (post: PostDto) => {
+  const handleEditPost = async (post: PostDto) => {
     setEditingPost(post);
     setPostForm({
       title: post.title,
@@ -94,6 +98,20 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     });
     setTitleError('');
     setDeadlineError('');
+    setSelectedFiles([]);
+    setIsLoadingEditingPostMaterials(true);
+
+    try {
+      const files = await postsService.listPostMaterials(courseId, post.id);
+      setEditingPostMaterials(files);
+    } catch (err: any) {
+      console.error('Failed to load post materials for edit:', err);
+      setEditingPostMaterials([]);
+      alert(err.message || 'Не удалось загрузить файлы поста');
+    } finally {
+      setIsLoadingEditingPostMaterials(false);
+    }
+
     setShowCreatePost(true);
   };
 
@@ -166,6 +184,9 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       }
 
       setShowCreatePost(false);
+      setEditingPostMaterials([]);
+      setSelectedFiles([]);
+      setIsLoadingEditingPostMaterials(false);
     } catch (err: any) {
       console.error('Failed to save post:', err);
       alert(err.message || 'Ошибка сохранения поста');
@@ -180,6 +201,30 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 
   const handleRemoveFile = (index: number) => {
     setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveExistingFile = async (fileId: string) => {
+    if (!editingPost) return;
+
+    try {
+      await postsService.deletePostMaterial(courseId, editingPost.id, fileId);
+
+      setEditingPostMaterials((prev) => prev.filter((file) => file.id !== fileId));
+      setPostMaterials((prev) => ({
+        ...prev,
+        [editingPost.id]: (prev[editingPost.id] || []).filter((file) => file.id !== fileId),
+      }));
+      setPosts((prev) => prev.map((post) => {
+        if (post.id !== editingPost.id) return post;
+        return {
+          ...post,
+          materialsCount: Math.max(0, post.materialsCount - 1),
+        };
+      }));
+    } catch (err: any) {
+      console.error('Failed to delete post material:', err);
+      alert(err.message || 'Не удалось удалить файл');
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -515,8 +560,19 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                   </label>
                 </div>
 
-                {selectedFiles.length > 0 && (
+                {(editingPostMaterials.length > 0 || selectedFiles.length > 0) && (
                   <div className="selected-files">
+                    {editingPostMaterials.map((file) => (
+                      <div key={file.id} className="file-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                        </svg>
+                        <span>{file.originalName}</span>
+                        <button type="button" className="delete-existing-file-button" onClick={() => handleRemoveExistingFile(file.id)}>
+                          х
+                        </button>
+                      </div>
+                    ))}
                     {selectedFiles.map((file, index) => (
                       <div key={index} className="file-item">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -532,11 +588,19 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                     ))}
                   </div>
                 )}
+                {isLoadingEditingPostMaterials && (
+                  <div className="post-materials-status">Загрузка прикрепленных файлов...</div>
+                )}
               </div>
             </div>
 
             <div className="modal-footer">
-              <button className="button-secondary" onClick={() => setShowCreatePost(false)}>
+              <button className="button-secondary" onClick={() => {
+                setShowCreatePost(false);
+                setSelectedFiles([]);
+                setEditingPostMaterials([]);
+                setIsLoadingEditingPostMaterials(false);
+              }}>
                 Отмена
               </button>
               <button className="button-primary" onClick={handleSavePost} data-testid="save-post-button">
@@ -565,8 +629,9 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           onCommentCreated={loadPosts}
           deleteComments={functions.deleteComments}
           editPublicComment={functions.editPublicComment}
-          setIsEditComment={functions.setIsEditComment}
           isEditComment={state.isEditComment}
+          editingCommentId={state.editingCommentId}
+          startEditComment={functions.startEditComment}
           errorsEditCommentForm={state.errorsEditCommentForm}
           editCommentForm={state.editCommentForm}
           handleChangeEditComment={functions.handleChangeEditComment}

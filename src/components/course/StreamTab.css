@@ -426,3 +426,15 @@ select:focus {
   color: #d93025;
 }
 
+.delete-existing-file-button {
+  width: auto;
+  height: auto;
+  border: 1px solid #f1c7c3;
+  background: #fff5f4;
+  color: #b3261e;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+}
+

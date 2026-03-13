@@ -11,14 +11,14 @@ interface PublicCommentsItemProps {
     courseId: string;
     postId: string;
     editPublicComment: (courseId: string, postId: string, commentId: string) => void;
-    setIsEditComment: (isEditComment: boolean) => void;
-    isEditComment: boolean;
+    startEditComment: (commentId: string, text: string) => void;
+    isEditing: boolean;
     errorsEditCommentForm: Partial<Record<keyof CreateCommentRequest, string>>;
     editCommentForm: CreateCommentRequest;
     handleChangeEditComment: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const PublicCommentsItem: React.FC<PublicCommentsItemProps> = ({ publicComment, deleteComments, courseId, postId, editPublicComment, setIsEditComment, isEditComment, errorsEditCommentForm, editCommentForm, handleChangeEditComment }) => {
+const PublicCommentsItem: React.FC<PublicCommentsItemProps> = ({ publicComment, deleteComments, courseId, postId, editPublicComment, startEditComment, isEditing, errorsEditCommentForm, editCommentForm, handleChangeEditComment }) => {
 
     const formatDate = (date: (Date)) => {
         if (!date) return "Нет данных";
@@ -33,13 +33,13 @@ const PublicCommentsItem: React.FC<PublicCommentsItemProps> = ({ publicComment, 
                     <span style={{ fontSize: '14px' }}>-</span>
                     <span style={{ fontSize: '14px' }}>{formatDate(publicComment.createdAt)}</span>
                 </div>
-                {isEditComment ? (
+                {isEditing ? (
                     <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'center', width: '100%' }}>
                         <InputForm
                             label=""
                             name="text"
                             type="text"
-                            value={publicComment.text || editCommentForm.text || ''}
+                            value={editCommentForm.text || ''}
                             placeholder="Добавьте комментарий..."
                             onChange={handleChangeEditComment}
                             error={!!errorsEditCommentForm.text}
@@ -57,7 +57,7 @@ const PublicCommentsItem: React.FC<PublicCommentsItemProps> = ({ publicComment, 
             </div>
             {localStorage.getItem('id') === publicComment.author.id ? (
                 <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
-                    <EditIcon style={{ cursor: 'pointer' }} onClick={() => setIsEditComment(!isEditComment)} />
+                    <EditIcon style={{ cursor: 'pointer' }} onClick={() => startEditComment(publicComment.id, publicComment.text)} />
                     <DeleteIcon style={{ cursor: 'pointer' }} onClick={() => deleteComments(courseId, postId, publicComment.id)} />
                 </div>
             ) : (
