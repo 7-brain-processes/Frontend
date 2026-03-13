@@ -15,6 +15,7 @@ export const registrationFunc = async (
         const result = await register({ username, password, displayName });
         if (result) {
             localStorage.setItem('token', result.token);
+            localStorage.setItem('id', result.user.id);
             navigate('/main');
             return;
         }

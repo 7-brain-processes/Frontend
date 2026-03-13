@@ -10,6 +10,7 @@ export const loginFunc = async (validateAuthForm: () => boolean, authForm: Auth,
         const result = await loginApi(authForm);
         if (result) {
             localStorage.setItem('token', result.token);
+            localStorage.setItem('id', result.user.id);
             navigate('/main');
             return;
         }
