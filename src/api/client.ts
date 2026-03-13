@@ -1,5 +1,6 @@
 const API_BASE_URL = '/api/v1';
 const NOT_FOUND_ROUTE = '/404';
+const LOGIN_ROUTE = '/login';
 
 export const getAuthToken = (): string | null => {
   return localStorage.getItem('token');
@@ -13,17 +14,31 @@ export const removeAuthToken = (): void => {
   localStorage.removeItem('token');
 };
 
-const shouldRedirectToNotFound = (status: number, endpoint: string): boolean => {
-  if (status !== 401 && status !== 403) {
-    return false;
-  }
+const isAuthEndpoint = (endpoint: string): boolean => {
+  return endpoint.startsWith('/auth/');
+};
 
-  if (endpoint.startsWith('/auth/')) {
+const shouldRedirectToLogin = (status: number, endpoint: string): boolean => {
+  if (status !== 401 || isAuthEndpoint(endpoint)) {
     return false;
   }
 
   const currentPath = window.location.pathname;
-  return currentPath !== '/login' && currentPath !== '/registration' && currentPath !== NOT_FOUND_ROUTE;
+  return currentPath !== LOGIN_ROUTE && currentPath !== '/registration';
+};
+
+const shouldRedirectToNotFound = (status: number, endpoint: string): boolean => {
+  if (status !== 403 || isAuthEndpoint(endpoint)) {
+    return false;
+  }
+
+  const currentPath = window.location.pathname;
+  return currentPath !== LOGIN_ROUTE && currentPath !== '/registration' && currentPath !== NOT_FOUND_ROUTE;
+};
+
+const redirectToLogin = () => {
+  removeAuthToken();
+  window.location.replace(LOGIN_ROUTE);
 };
 
 const redirectToNotFound = () => {
@@ -52,6 +67,11 @@ export const apiRequest = async <T>(
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
   if (!response.ok) {
+    if (shouldRedirectToLogin(response.status, endpoint)) {
+      redirectToLogin();
+      throw new Error('Unauthorized');
+    }
+
     if (shouldRedirectToNotFound(response.status, endpoint)) {
       redirectToNotFound();
       throw new Error('Access denied');
@@ -88,6 +108,11 @@ export const uploadFile = async <T>(
   });
 
   if (!response.ok) {
+    if (shouldRedirectToLogin(response.status, endpoint)) {
+      redirectToLogin();
+      throw new Error('Unauthorized');
+    }
+
     if (shouldRedirectToNotFound(response.status, endpoint)) {
       redirectToNotFound();
       throw new Error('Access denied');
@@ -116,6 +141,11 @@ export const downloadFile = async (endpoint: string): Promise<Blob> => {
   });
 
   if (!response.ok) {
+    if (shouldRedirectToLogin(response.status, endpoint)) {
+      redirectToLogin();
+      throw new Error('Unauthorized');
+    }
+
     if (shouldRedirectToNotFound(response.status, endpoint)) {
       redirectToNotFound();
       throw new Error('Access denied');

@@ -11,6 +11,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [task, setTask] = useState<PostDto | null>(null);
     const [solutions, setSolutions] = useState<SolutionDto[]>([]);
     const [solutionFiles, setSolutionFiles] = useState<Record<string, FileDto[]>>({});
+    const [taskMaterials, setTaskMaterials] = useState<FileDto[]>([]);
     const [mySolution, setMySolution] = useState<SolutionDto | null>(null);
     const [mySolutionFiles, setMySolutionFiles] = useState<FileDto[]>([]);
     const [mySolutionComments, setMySolutionComments] = useState<CommentDto[]>([]);
@@ -40,6 +41,18 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setError(null);
             const data = await postsService.getPost(courseId, taskId);
             setTask(data);
+
+            if (data.materialsCount > 0) {
+                try {
+                    const materials = await postsService.listPostMaterials(courseId, taskId);
+                    setTaskMaterials(materials);
+                } catch (err) {
+                    console.error('Failed to load task materials:', err);
+                    setTaskMaterials([]);
+                }
+            } else {
+                setTaskMaterials([]);
+            }
             
             if (userRole === 'STUDENT') {
                 await loadMySolution();
@@ -305,6 +318,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             task,
             solutions,
             solutionFiles,
+            taskMaterials,
             mySolution,
             mySolutionFiles,
             mySolutionComments,
@@ -336,6 +350,23 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             handleCancelSubmit,
             handleBack,
             formatDeadline,
+            handleDownloadTaskMaterial: async (fileId: string, fileName: string) => {
+                if (!courseId || !taskId) return;
+                try {
+                    const blob = await postsService.downloadPostMaterial(courseId, taskId, fileId);
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (err) {
+                    console.error('Failed to download task material:', err);
+                    alert('Ошибка при скачивании файла');
+                }
+            },
             handleDownloadFile: async (fileId: string, fileName: string) => {
                 if (!courseId || !taskId || !mySolution) return;
                 try {

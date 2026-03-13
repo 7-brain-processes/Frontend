@@ -98,6 +98,27 @@ const TaskDetailPage = () => {
                 <p>{state.task.content}</p>
               </div>
             )}
+
+            {state.taskMaterials.length > 0 && (
+              <div className="task-materials">
+                <h3>Файлы задания</h3>
+                <div className="task-materials-list">
+                  {state.taskMaterials.map((file) => (
+                    <button
+                      key={file.id}
+                      type="button"
+                      className="task-material-item"
+                      onClick={() => functions.handleDownloadTaskMaterial(file.id, file.originalName)}
+                    >
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                      </svg>
+                      <span>{file.originalName}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -272,7 +293,9 @@ const TaskDetailPage = () => {
                                 hour: '2-digit',
                                 minute: '2-digit'
                               })}
-                              {lateSubmission && <span className="late-submission-text"> • После срока</span>}
+                              {lateSubmission && (
+                                <span className="late-submission-text"> • После срока</span>
+                              )}
                             </div>
                           </div>
                         </div>
