@@ -131,7 +131,19 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           content: postForm.content || undefined,
           deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
         });
+
+        if (selectedFiles.length > 0) {
+          for (const file of selectedFiles) {
+            try {
+              await postsService.uploadPostMaterial(courseId, editingPost.id, file);
+            } catch (err) {
+              console.error('Failed to upload file:', err);
+            }
+          }
+        }
+
         setPosts(posts.map((p) => (p.id === editingPost.id ? updatedPost : p)));
+        await loadPosts();
       } else {
         const newPost = await postsService.createPost(courseId, {
           title: postForm.title,
