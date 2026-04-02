@@ -53,7 +53,7 @@ export const useCourseDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
-    const [activeTab, setActiveTab] = useState<'stream' | 'assignments' | 'people'>('stream');
+    const [activeTab, setActiveTab] = useState<'stream' | 'assignments' | 'people' | 'category'>('stream');
     const [showCourseMenu, setShowCourseMenu] = useState(false);
     const [showEditCourse, setShowEditCourse] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

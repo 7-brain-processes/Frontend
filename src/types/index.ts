@@ -12,3 +12,4 @@ export * from './Auth';
 export * from './CreateCourse';
 export * from './JoinToCourse';
 export * from './Registration';
+export * from './Category';
