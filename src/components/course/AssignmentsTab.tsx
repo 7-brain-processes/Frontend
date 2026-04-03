@@ -3,10 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import './AssignmentsTab.css';
 import { PostDto, CourseRole, SolutionDto, PostType, SolutionStatus } from '../../types/api';
 import { postsService, solutionsService } from '../../api/services';
+import { FormControl, MenuItem, Select } from "@mui/material";
 
 interface AssignmentsTabProps {
   courseId: string;
   userRole: CourseRole;
+}
+
+const translateTeamFormationMode = {
+  'FREE': 'самостоятельное',
+  'DRAFT': 'драфт',
+  'RANDOM_SHUFFLE': 'рандомное'
 }
 
 export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabProps) {
@@ -25,7 +32,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   const [assignmentForm, setAssignmentForm] = useState({
     title: '',
     content: '',
-    deadline: ''
+    deadline: '',
+    teamFormationMode: ''
   });
 
   useEffect(() => {
@@ -100,7 +108,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
 
   const handleSubmitSolution = async () => {
     if (!selectedAssignment) return;
-    
+
     if (!solutionText.trim()) {
       alert('Введите текст решения');
       return;
@@ -124,7 +132,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       }
 
       await loadMySolution(selectedAssignment.id);
-      
+
       setShowSubmitForm(false);
       setSolutionText('');
       setSelectedFiles([]);
@@ -141,7 +149,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       await solutionsService.gradeSolution(courseId, selectedAssignment.id, solutionId, {
         grade,
       });
-      
+
       await loadSolutions(selectedAssignment.id);
     } catch (err: any) {
       console.error('Failed to grade solution:', err);
@@ -151,7 +159,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
 
   const handleCreateAssignment = () => {
     setEditingAssignment(null);
-    setAssignmentForm({ title: '', content: '', deadline: '' });
+    setAssignmentForm({ title: '', content: '', deadline: '', teamFormationMode: '' });
     setDeadlineError('');
     setShowCreateAssignment(true);
   };
@@ -161,7 +169,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     setAssignmentForm({
       title: assignment.title,
       content: assignment.content || '',
-      deadline: toDateTimeLocal(assignment.deadline)
+      deadline: toDateTimeLocal(assignment.deadline),
+      teamFormationMode: ''
     });
     setDeadlineError('');
     setShowCreateAssignment(true);
@@ -229,14 +238,14 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     const date = new Date(deadline);
     const now = new Date();
     const isPast = date < now;
-    
-    const options: Intl.DateTimeFormatOptions = { 
-      day: 'numeric', 
-      month: 'long', 
-      hour: '2-digit', 
-      minute: '2-digit' 
+
+    const options: Intl.DateTimeFormatOptions = {
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit'
     };
-    
+
     return {
       text: date.toLocaleDateString('ru-RU', options),
       isPast
@@ -269,7 +278,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       <div className="assignment-detail">
         <button className="back-button" onClick={closeAssignment}>
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
           </svg>
           Назад к заданиям
         </button>
@@ -281,7 +290,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
               {selectedAssignment.deadline && (
                 <div className={`deadline ${formatDeadline(selectedAssignment.deadline).isPast ? 'past' : ''}`}>
                   <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
                   </svg>
                   Срок: {formatDeadline(selectedAssignment.deadline).text}
                 </div>
@@ -289,30 +298,30 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
             </div>
             {userRole === 'TEACHER' && (
               <div className="assignment-actions">
-                <button 
+                <button
                   className="icon-button"
                   onClick={() => handleEditAssignment(selectedAssignment)}
                   title="Редактировать"
                   data-testid="edit-assignment-button"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                   </svg>
                 </button>
-                <button 
+                <button
                   className="icon-button"
                   onClick={() => handleDeleteAssignment(selectedAssignment.id)}
                   title="Удалить"
                   data-testid="delete-assignment-button"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
                   </svg>
                 </button>
               </div>
             )}
           </div>
-          
+
           <div className="assignment-description">
             {selectedAssignment.content}
           </div>
@@ -336,9 +345,9 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                     {mySolution.status === 'SUBMITTED' ? 'Сдано' : 'Оценено'}
                   </span>
                 </div>
-                
+
                 <div className="solution-text">{mySolution.text}</div>
-                
+
                 {mySolution.filesCount > 0 && (
                   <div className="solution-files">
                     <h4>Прикрепленные файлы</h4>
@@ -359,7 +368,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                 )}
 
                 {mySolution.grade === null && mySolution.status !== 'GRADED' && (
-                  <button 
+                  <button
                     className="edit-solution-button"
                     onClick={() => {
                       setSolutionText(mySolution.text);
@@ -373,7 +382,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
             ) : showSubmitForm ? (
               <div className="submit-form">
                 <h3>Сдать решение</h3>
-                
+
                 <textarea
                   className="solution-textarea"
                   placeholder="Введите ваше решение..."
@@ -392,7 +401,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                   />
                   <label htmlFor="file-input" className="file-upload-button">
                     <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                      <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
+                      <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" />
                     </svg>
                     Прикрепить файлы
                   </label>
@@ -418,8 +427,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                   }}>
                     Отмена
                   </button>
-                  <button 
-                    className="submit-button" 
+                  <button
+                    className="submit-button"
                     onClick={handleSubmitSolution}
                     disabled={!solutionText.trim()}
                   >
@@ -436,7 +445,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
         ) : (
           <div className="teacher-section">
             <h3>Решения студентов ({solutions.length})</h3>
-            
+
             {solutions.length === 0 ? (
               <div className="no-solutions">
                 <p>Пока нет сданных решений</p>
@@ -447,82 +456,83 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                   const lateSubmission = isLateSolution(solution.submittedAt, selectedAssignment.deadline);
 
                   return (
-                  <div key={solution.id} className={`solution-card ${lateSubmission ? 'late' : ''}`}>
-                    <div className="solution-student">
-                      <div className="student-avatar">
-                        {solution.student.displayName.charAt(0)}
-                      </div>
-                      <div className="student-info">
-                        <div className="student-name">{solution.student.displayName}</div>
-                        <div className="solution-date">
-                          Сдано: {new Date(solution.submittedAt).toLocaleDateString('ru-RU')}
-                          {lateSubmission && <span className="late-submission-text"> • После срока</span>}
+                    <div key={solution.id} className={`solution-card ${lateSubmission ? 'late' : ''}`}>
+                      <div className="solution-student">
+                        <div className="student-avatar">
+                          {solution.student.displayName.charAt(0)}
                         </div>
-                      </div>
-                      <span className={`status-badge ${solution.status.toLowerCase()}`}>
-                        {solution.status === 'SUBMITTED' ? 'Сдано' : 'Оценено'}
-                      </span>
-                      {lateSubmission && (
-                        <span className="late-submission-badge">Сдано с опозданием</span>
-                      )}
-                    </div>
-
-                    <div className="solution-content">
-                      <p>{solution.text}</p>
-                      {solution.filesCount > 0 && (
-                        <div className="files-info">
-                          📎 {solution.filesCount} файл(ов)
+                        <div className="student-info">
+                          <div className="student-name">{solution.student.displayName}</div>
+                          <div className="solution-date">
+                            Сдано: {new Date(solution.submittedAt).toLocaleDateString('ru-RU')}
+                            {lateSubmission && <span className="late-submission-text"> • После срока</span>}
+                          </div>
                         </div>
-                      )}
-                    </div>
-
-                    {solution.status === 'GRADED' && solution.grade !== undefined ? (
-                      <div className="graded-info">
-                        <strong>Оценка: {solution.grade} / 100</strong>
-                        {solution.gradedAt && (
-                          <span className="grade-date">
-                            {new Date(solution.gradedAt).toLocaleDateString('ru-RU')}
-                          </span>
+                        <span className={`status-badge ${solution.status.toLowerCase()}`}>
+                          {solution.status === 'SUBMITTED' ? 'Сдано' : 'Оценено'}
+                        </span>
+                        {lateSubmission && (
+                          <span className="late-submission-badge">Сдано с опозданием</span>
                         )}
-                        <button
-                          type="button"
-                          className="remove-grade-button"
-                          onClick={() => handleGradeSolution(solution.id, null)}
-                        >
-                          Снять оценку
-                        </button>
                       </div>
-                    ) : (
-                      <div className="grade-form">
-                        <input 
-                          type="number" 
-                          min="0" 
-                          max="100" 
-                          placeholder="Оценка (0-100)"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              const grade = parseInt((e.target as HTMLInputElement).value);
+
+                      <div className="solution-content">
+                        <p>{solution.text}</p>
+                        {solution.filesCount > 0 && (
+                          <div className="files-info">
+                            📎 {solution.filesCount} файл(ов)
+                          </div>
+                        )}
+                      </div>
+
+                      {solution.status === 'GRADED' && solution.grade !== undefined ? (
+                        <div className="graded-info">
+                          <strong>Оценка: {solution.grade} / 100</strong>
+                          {solution.gradedAt && (
+                            <span className="grade-date">
+                              {new Date(solution.gradedAt).toLocaleDateString('ru-RU')}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className="remove-grade-button"
+                            onClick={() => handleGradeSolution(solution.id, null)}
+                          >
+                            Снять оценку
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grade-form">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            placeholder="Оценка (0-100)"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                const grade = parseInt((e.target as HTMLInputElement).value);
+                                if (grade >= 0 && grade <= 100) {
+                                  handleGradeSolution(solution.id, grade);
+                                }
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={(e) => {
+                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                              const grade = parseInt(input.value);
                               if (grade >= 0 && grade <= 100) {
                                 handleGradeSolution(solution.id, grade);
                               }
-                            }
-                          }}
-                        />
-                        <button 
-                          onClick={(e) => {
-                            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                            const grade = parseInt(input.value);
-                            if (grade >= 0 && grade <= 100) {
-                              handleGradeSolution(solution.id, grade);
-                            }
-                          }}
-                        >
-                          Выставить оценку
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )})}
+                            }}
+                          >
+                            Выставить оценку
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -536,13 +546,13 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       <div className="assignments-header">
         <h2>Задания</h2>
         {userRole === 'TEACHER' && (
-          <button 
+          <button
             className="create-assignment-button"
             onClick={handleCreateAssignment}
             data-testid="create-assignment-button"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
             </svg>
             <span>Создать задание</span>
           </button>
@@ -555,7 +565,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
         <div className="empty-state">
           <div className="empty-state-icon">
             <svg viewBox="0 0 24 24" fill="#5f6368" width="80" height="80">
-              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
             </svg>
           </div>
           <h3 className="empty-state-title">Заданий пока нет</h3>
@@ -570,8 +580,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
             const hasSubmitted = assignment.mySolutionId !== null;
 
             return (
-              <div 
-                key={assignment.id} 
+              <div
+                key={assignment.id}
                 className="assignment-card"
                 onClick={() => openAssignment(assignment)}
               >
@@ -580,7 +590,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                   {hasSubmitted && (
                     <span className="submitted-badge">
                       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                       </svg>
                       Сдано
                     </span>
@@ -589,16 +599,20 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
 
                 <p className="assignment-preview">{assignment.content}</p>
 
+                {assignment.teamFormationMode && (
+                  <p className="assignment-preview">Распределение по командам: {translateTeamFormationMode[assignment.teamFormationMode]}</p>
+                )}
+
                 <div className="assignment-card-footer">
                   {deadlineInfo && (
                     <div className={`deadline ${deadlineInfo.isPast ? 'past' : ''}`}>
                       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
                       </svg>
                       {deadlineInfo.text}
                     </div>
                   )}
-                  
+
                   <div className="assignment-stats">
                     {assignment.materialsCount > 0 && (
                       <span>📎 {assignment.materialsCount}</span>
@@ -618,11 +632,11 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
               <h2>{editingAssignment ? 'Редактировать задание' : 'Создать задание'}</h2>
               <button className="close-button" onClick={() => setShowCreateAssignment(false)}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                 </svg>
               </button>
             </div>
-            
+
             <div className="modal-body">
               <div className="form-group">
                 <label htmlFor="assignment-title">Название задания *</label>
@@ -666,6 +680,20 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                     {deadlineError}
                   </div>
                 )}
+              </div>
+              <div className="form-group">
+                <label htmlFor="assignment-deadline">Режим формирования команд</label>
+                <FormControl fullWidth>
+                  <Select
+                    id="demo-simple-select"
+                    value={assignmentForm.teamFormationMode}
+                    onChange={e => setAssignmentForm({ ...assignmentForm, teamFormationMode: e.target.value })}
+                  >
+                    <MenuItem value={'FREE'}>Самостоятельное распределение</MenuItem>
+                    <MenuItem value={'DRAFT'}>Драфт распределение</MenuItem>
+                    <MenuItem value={'RANDOM_SHUFFLE'}>Рандомное распределение</MenuItem>
+                  </Select>
+                </FormControl>
               </div>
             </div>
 

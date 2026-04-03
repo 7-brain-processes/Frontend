@@ -6,6 +6,7 @@ import { postsService } from '../../api/services';
 import './StreamTab.css';
 import PublicCommentsDialog from '../../pages/PublicComments/PublicCommentsDialog';
 import { usePublicCommentsDialog } from '../../pages/PublicComments/hooks/usePublicCommentsDialog';
+import { FormControl, MenuItem, Select } from '@mui/material';
 
 interface StreamTabProps {
   courseId: string;
@@ -23,6 +24,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     title: '',
     content: '',
     type: 'MATERIAL' as PostType,
+    teamFormationMode: '',
     deadline: ''
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -79,7 +81,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 
   const handleCreatePost = () => {
     setEditingPost(null);
-    setPostForm({ title: '', content: '', type: 'MATERIAL', deadline: '' });
+    setPostForm({ title: '', content: '', type: 'MATERIAL', teamFormationMode: '', deadline: '' });
     setTitleError('');
     setDeadlineError('');
     setSelectedFiles([]);
@@ -94,6 +96,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       title: post.title,
       content: post.content || '',
       type: post.type,
+      teamFormationMode: post.teamFormationMode,
       deadline: toDateTimeLocal(post.deadline)
     });
     setTitleError('');
@@ -520,24 +523,41 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
               </div>
 
               {postForm.type === 'TASK' && (
-                <div className="form-group">
-                  <label htmlFor="post-deadline">Срок сдачи</label>
-                  <input
-                    id="post-deadline"
-                    type="datetime-local"
-                    value={postForm.deadline}
-                    onChange={(e) => {
-                      setPostForm({ ...postForm, deadline: e.target.value });
-                      setDeadlineError('');
-                    }}
-                    min={getMinDateTimeLocal()}
-                    data-testid="post-deadline-input"
-                  />
-                  {deadlineError && (
-                    <div style={{ color: '#d32f2f', fontSize: '14px', marginTop: '8px' }} data-testid="post-deadline-error">
-                      {deadlineError}
-                    </div>
-                  )}
+                <div>
+                  <div className="form-group">
+                    <label htmlFor="post-deadline">Срок сдачи</label>
+                    <input
+                      id="post-deadline"
+                      type="datetime-local"
+                      value={postForm.deadline}
+                      onChange={(e) => {
+                        setPostForm({ ...postForm, deadline: e.target.value });
+                        setDeadlineError('');
+                      }}
+                      min={getMinDateTimeLocal()}
+                      data-testid="post-deadline-input"
+                    />
+                    {deadlineError && (
+                      <div style={{ color: '#d32f2f', fontSize: '14px', marginTop: '8px' }} data-testid="post-deadline-error">
+                        {deadlineError}
+                      </div>
+                    )}
+
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="assignment-deadline">Режим формирования команд</label>
+                    <FormControl fullWidth>
+                      <Select
+                        id="demo-simple-select"
+                        value={postForm.teamFormationMode}
+                        onChange={e => setPostForm({ ...postForm, teamFormationMode: e.target.value })}
+                      >
+                        <MenuItem value={'FREE'}>Самостоятельное распределение</MenuItem>
+                        <MenuItem value={'DRAFT'}>Драфт распределение</MenuItem>
+                        <MenuItem value={'RANDOM_SHUFFLE'}>Рандомное распределение</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </div>
                 </div>
               )}
 
