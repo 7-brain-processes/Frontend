@@ -4,6 +4,7 @@ import PeopleTab from '../../components/course/PeopleTab';
 import { generateColor } from '../../components/CourseCard';
 import { useCourseDetailPage } from './hooks/useCourseDetailPage';
 import './CourseDetailPage.css';
+import CategoryTab from '../../components/course/CategoryTab/CategoryTab';
 
 const CourseDetailPage = () => {
   const { state, functions } = useCourseDetailPage();
@@ -126,6 +127,13 @@ const CourseDetailPage = () => {
           >
             Пользователи
           </button>
+          <button
+            className={`course-tab ${activeTab === 'category' ? 'active' : ''}`}
+            onClick={() => setActiveTab('category')}
+            data-testid="tab-category"
+          >
+            Категории
+          </button>
         </div>
 
         <div className="course-content">
@@ -139,6 +147,10 @@ const CourseDetailPage = () => {
 
           {activeTab === 'people' && (
             <PeopleTab courseId={course.id} userRole={userRole} />
+          )}
+
+          {activeTab === 'category' && (
+            <CategoryTab courseId={course.id} userRole={userRole} />
           )}
         </div>
       </main>

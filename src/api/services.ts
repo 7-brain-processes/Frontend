@@ -4,4 +4,5 @@ export * from './posts';
 export * from './solutions';
 export * from './members';
 export * from './invites';
+export * from './category';
 
