@@ -5,6 +5,12 @@ import { coursesService } from '../../api/services';
 import { CourseRole } from '../../types/api';
 import './TaskDetailPage.css';
 
+const translateTeamFormationMode = {
+  'FREE': 'самостоятельное',
+  'DRAFT': 'драфт',
+  'RANDOM_SHUFFLE': 'рандомное'
+}
+
 const TaskDetailPage = () => {
   const { courseId } = useParams<{ courseId: string; taskId: string }>();
   const [userRole, setUserRole] = useState<CourseRole>('STUDENT');
@@ -96,6 +102,12 @@ const TaskDetailPage = () => {
             {state.task.content && (
               <div className="task-description">
                 <p>{state.task.content}</p>
+              </div>
+            )}
+
+            {state.task.teamFormationMode && (
+              <div className="task-description">
+                <p className="assignment-preview">Распределение по командам: {translateTeamFormationMode[state.task.teamFormationMode]}</p>
               </div>
             )}
 
