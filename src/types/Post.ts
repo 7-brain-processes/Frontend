@@ -7,7 +7,7 @@ export interface PostDto {
   title: string;
   content: string;
   type: PostType;
-  teamFormationMode: 'FREE' | 'DRAFT' | 'RANDOM_SHUFFLE';
+  teamFormationMode: 'FREE' | 'DRAFT' | 'CAPTAIN_SELECTION' | 'RANDOM_SHUFFLE';
   deadline: string | null;
   author: UserDto;
   materialsCount: number;
@@ -22,7 +22,7 @@ export interface CreatePostRequest {
   title: string;
   content?: string;
   type: PostType;
-  teamFormationMode?: 'FREE' | 'DRAFT' | 'RANDOM_SHUFFLE';
+  teamFormationMode?: 'FREE' | 'DRAFT' | 'CAPTAIN_SELECTION' | 'RANDOM_SHUFFLE';
   deadline?: string;
 }
 
@@ -30,7 +30,7 @@ export interface UpdatePostRequest {
   title?: string;
   content?: string;
   deadline?: string;
-  teamFormationMode?: 'FREE' | 'DRAFT' | 'RANDOM_SHUFFLE';
+  teamFormationMode?: 'FREE' | 'DRAFT' | 'CAPTAIN_SELECTION' | 'RANDOM_SHUFFLE';
 }
 
 export interface PagePostDto {

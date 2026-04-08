@@ -13,3 +13,6 @@ export * from './CreateCourse';
 export * from './JoinToCourse';
 export * from './Registration';
 export * from './Category';
+export * from './Team';
+export * from './TeamFormation';
+export * from './TeamInvitation';

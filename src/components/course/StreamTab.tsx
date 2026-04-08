@@ -16,6 +16,7 @@ interface StreamTabProps {
 const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const navigate = useNavigate();
   const { state, functions } = usePublicCommentsDialog();
+  type TeamFormationModeValue = PostDto['teamFormationMode'] | '';
   const [posts, setPosts] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -24,7 +25,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     title: '',
     content: '',
     type: 'MATERIAL' as PostType,
-    teamFormationMode: '',
+    teamFormationMode: '' as TeamFormationModeValue,
     deadline: ''
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -151,6 +152,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           title: postForm.title,
           content: postForm.content || undefined,
           deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
+          teamFormationMode: postForm.type === 'TASK' ? postForm.teamFormationMode || undefined : undefined,
         });
 
         if (selectedFiles.length > 0) {
@@ -171,6 +173,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           content: postForm.content || undefined,
           type: postForm.type,
           deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
+          teamFormationMode: postForm.type === 'TASK' ? postForm.teamFormationMode || undefined : undefined,
         });
 
         if (selectedFiles.length > 0) {
@@ -553,7 +556,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                         onChange={e => setPostForm({ ...postForm, teamFormationMode: e.target.value })}
                       >
                         <MenuItem value={'FREE'}>Самостоятельное распределение</MenuItem>
-                        <MenuItem value={'DRAFT'}>Драфт распределение</MenuItem>
+                        <MenuItem value={'CAPTAIN_SELECTION'}>Драфт распределение</MenuItem>
                         <MenuItem value={'RANDOM_SHUFFLE'}>Рандомное распределение</MenuItem>
                       </Select>
                     </FormControl>
