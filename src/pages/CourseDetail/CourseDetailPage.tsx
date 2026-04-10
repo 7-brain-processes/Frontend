@@ -1,6 +1,8 @@
 import StreamTab from '../../components/course/StreamTab';
 import AssignmentsTab from '../../components/course/AssignmentsTab';
 import PeopleTab from '../../components/course/PeopleTab';
+import CategoryTab from '../../components/course/CategoryTab/CategoryTab';
+import TeamsTab from '../../components/course/TeamsTab';
 import { generateColor } from '../../components/CourseCard';
 import { useCourseDetailPage } from './hooks/useCourseDetailPage';
 import './CourseDetailPage.css';
@@ -47,7 +49,7 @@ const CourseDetailPage = () => {
       </div>
     );
   }
-  
+
   const userRole = course.currentUserRole;
   const color = generateColor(course.id);
 
@@ -74,26 +76,26 @@ const CourseDetailPage = () => {
           </div>
           {userRole === 'TEACHER' && (
             <div className="course-header-actions">
-              <button 
+              <button
                 className="course-menu-button"
                 onClick={() => setShowCourseMenu(!showCourseMenu)}
                 data-testid="course-menu-button"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                  <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
                 </svg>
               </button>
               {showCourseMenu && (
                 <div className="course-menu-dropdown">
                   <button onClick={handleEditCourse} data-testid="edit-course-button">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                     </svg>
                     Редактировать курс
                   </button>
                   <button onClick={handleDeleteCourse} className="danger" data-testid="delete-course-button">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
                     </svg>
                     Удалить курс
                   </button>
@@ -126,6 +128,20 @@ const CourseDetailPage = () => {
           >
             Пользователи
           </button>
+          <button
+            className={`course-tab ${activeTab === 'category' ? 'active' : ''}`}
+            onClick={() => setActiveTab('category')}
+            data-testid="tab-category"
+          >
+            Категории
+          </button>
+          <button
+            className={`course-tab ${activeTab === 'teams' ? 'active' : ''}`}
+            onClick={() => setActiveTab('teams')}
+            data-testid="tab-teams"
+          >
+            Команды
+          </button>
         </div>
 
         <div className="course-content">
@@ -140,6 +156,14 @@ const CourseDetailPage = () => {
           {activeTab === 'people' && (
             <PeopleTab courseId={course.id} userRole={userRole} />
           )}
+
+          {activeTab === 'category' && (
+            <CategoryTab courseId={course.id} userRole={userRole} />
+          )}
+
+          {activeTab === 'teams' && (
+            <TeamsTab courseId={course.id} userRole={userRole} />
+          )}
         </div>
       </main>
 
@@ -150,7 +174,7 @@ const CourseDetailPage = () => {
               <h2>Редактировать курс</h2>
               <button className="close-button" onClick={() => setShowEditCourse(false)}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                 </svg>
               </button>
             </div>
@@ -197,7 +221,7 @@ const CourseDetailPage = () => {
               <h2>Удалить курс</h2>
               <button className="close-button" onClick={() => setShowDeleteConfirm(false)}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                 </svg>
               </button>
             </div>

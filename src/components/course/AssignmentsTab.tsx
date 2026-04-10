@@ -13,11 +13,13 @@ interface AssignmentsTabProps {
 const translateTeamFormationMode = {
   'FREE': 'самостоятельное',
   'DRAFT': 'драфт',
+  'CAPTAIN_SELECTION': 'драфт',
   'RANDOM_SHUFFLE': 'рандомное'
 }
 
 export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabProps) {
   const navigate = useNavigate();
+  type TeamFormationModeValue = PostDto['teamFormationMode'] | '';
   const [assignments, setAssignments] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<PostDto | null>(null);
@@ -33,7 +35,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     title: '',
     content: '',
     deadline: '',
-    teamFormationMode: ''
+    teamFormationMode: '' as TeamFormationModeValue
   });
 
   useEffect(() => {
@@ -170,7 +172,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       title: assignment.title,
       content: assignment.content || '',
       deadline: toDateTimeLocal(assignment.deadline),
-      teamFormationMode: ''
+      teamFormationMode: assignment.teamFormationMode || ''
     });
     setDeadlineError('');
     setShowCreateAssignment(true);
@@ -209,6 +211,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
           title: assignmentForm.title,
           content: assignmentForm.content || undefined,
           deadline: assignmentForm.deadline ? new Date(assignmentForm.deadline).toISOString() : undefined,
+          teamFormationMode: assignmentForm.teamFormationMode || undefined,
         });
         setAssignments(assignments.map(a => (a.id === editingAssignment.id ? updatedPost : a)));
       } else {
@@ -217,6 +220,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
           content: assignmentForm.content || undefined,
           type: 'TASK',
           deadline: assignmentForm.deadline ? new Date(assignmentForm.deadline).toISOString() : undefined,
+          teamFormationMode: assignmentForm.teamFormationMode || undefined,
         });
         setAssignments([...assignments, newPost]);
       }
@@ -690,7 +694,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                     onChange={e => setAssignmentForm({ ...assignmentForm, teamFormationMode: e.target.value })}
                   >
                     <MenuItem value={'FREE'}>Самостоятельное распределение</MenuItem>
-                    <MenuItem value={'DRAFT'}>Драфт распределение</MenuItem>
+                    <MenuItem value={'CAPTAIN_SELECTION'}>Драфт распределение</MenuItem>
                     <MenuItem value={'RANDOM_SHUFFLE'}>Рандомное распределение</MenuItem>
                   </Select>
                 </FormControl>
