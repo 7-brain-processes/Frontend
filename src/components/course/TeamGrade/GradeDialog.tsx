@@ -1,17 +1,21 @@
 import { FormControl, MenuItem, Select } from "@mui/material";
+import { CourseTeamDto } from "../../../types";
+import { SetTeamGradeDistributionModeRequest, TeamGradeDistributionMode } from "../../../types/TeamGrade";
+import '../AssignmentsTab.css';
 
 interface GradeDialogProps {
-    showTeamGradeModal:;
-    selectedTeam:;
-    setShowTeamGradeModal:;
-    gradeValue:;
-    setGradeValue:;
-    handleTeamGradeSolution:;
-    distributionMode:;
-    setDistributionMode:;
+    showTeamGradeModal: boolean;
+    selectedTeam: CourseTeamDto | null;
+    setShowTeamGradeModal: (showTeamGradeModal: boolean) => void;
+    gradeValue: number;
+    setGradeValue: (gradeValue: number) => void;
+    handleTeamGradeSolution: () => void;
+    distributionMode: SetTeamGradeDistributionModeRequest;
+    setDistributionMode: (distributionMode: SetTeamGradeDistributionModeRequest) => void;
+    team: CourseTeamDto;
 }
 
-const GradeDialog: React.FC<GradeDialogProps> = ({ showTeamGradeModal, selectedTeam, setShowTeamGradeModal, gradeValue, setGradeValue, handleTeamGradeSolution, distributionMode, setDistributionMode }) => {
+const GradeDialog: React.FC<GradeDialogProps> = ({ showTeamGradeModal, selectedTeam, setShowTeamGradeModal, gradeValue, setGradeValue, handleTeamGradeSolution, distributionMode, setDistributionMode, team }) => {
     return (
         <div>
             {showTeamGradeModal && selectedTeam && (
@@ -30,7 +34,7 @@ const GradeDialog: React.FC<GradeDialogProps> = ({ showTeamGradeModal, selectedT
                         </div>
                         <div className="modal-body">
                             <div className="student-info-modal">
-                                <strong>Название команды</strong>
+                                <strong>{team.name}</strong>
                             </div>
                             <div className="form-group">
                                 <label htmlFor="grade-input">Оценка (0-100)</label>
@@ -49,7 +53,9 @@ const GradeDialog: React.FC<GradeDialogProps> = ({ showTeamGradeModal, selectedT
                                     <Select
                                         id="demo-simple-select"
                                         value={distributionMode}
-                                        onChange={e => setDistributionMode(e.target.value)}
+                                        onChange={(e => setDistributionMode({
+                                            distributionMode: e.target.value as TeamGradeDistributionMode
+                                        }))}
                                     >
                                         <MenuItem value={'MANUAL'}>Капитан распределяет</MenuItem>
                                         <MenuItem value={'AUTO_EQUAL'}>Автоматически</MenuItem>

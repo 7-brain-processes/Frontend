@@ -32,3 +32,12 @@ export interface TeamGradeDistributionDto {
     distributionMode: TeamGradeDistributionMode;
     students: StudentDistributedGradeDto[];
 }
+
+export interface CaptainStudentGradeEntry {
+    studentId: string;
+    grade: number;
+}
+
+export interface CaptainGradeDistributionRequest {
+    grades: CaptainStudentGradeEntry[];
+}

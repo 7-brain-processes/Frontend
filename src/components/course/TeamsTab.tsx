@@ -8,6 +8,9 @@ import {
   CreateCourseTeamRequest,
   MemberDto,
 } from '../../types/api';
+import { useTeamGrade } from './TeamGrade/hooks/useTeamGrade';
+import GradeDialog from './TeamGrade/GradeDialog';
+import CaptainGradeDialog from './TeamGrade/CaptainGradeDialog';
 
 interface TeamsTabProps {
   courseId: string;
@@ -56,7 +59,15 @@ const formatLimit = (maxSize: number | null) => {
   return maxSize === null ? 'без лимита' : `${maxSize}`;
 };
 
+const translateTeamGradeDistributionMode = {
+  'MANUAL': 'капитан распределяет',
+  'AUTO_EQUAL': 'автоматическое'
+};
+
 export default function TeamsTab({ courseId, userRole }: TeamsTabProps) {
+
+  const { state, functions } = useTeamGrade();
+
   const [teams, setTeams] = useState<CourseTeamDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -290,6 +301,37 @@ export default function TeamsTab({ courseId, userRole }: TeamsTabProps) {
                   <div>
                     <h3>{team.name}</h3>
                     <div className="course-team-meta">
+                      {state.grade && state.distribution ? (
+                        <div>
+                          <span>Оценка команды: {state.grade.grade}</span>
+                          <button
+                            className="submit-button"
+                            onClick={() => functions.handleOpenGradeModal(team)}
+                          >
+                            Изменить
+                          </button>
+                          <span>Режим распределения оценки: {translateTeamGradeDistributionMode[state.distribution.distributionMode]}</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <button
+                            className="submit-button"
+                            onClick={() => functions.handleOpenGradeModal(team)}
+                          >
+                            Оценить
+                          </button>
+                        </div>
+                      )}
+                      <GradeDialog
+                        showTeamGradeModal={state.showTeamGradeModal}
+                        selectedTeam={state.selectedTeam}
+                        setShowTeamGradeModal={functions.setShowTeamGradeModal}
+                        gradeValue={state.gradeValue}
+                        setGradeValue={functions.setGradeValue}
+                        handleTeamGradeSolution={functions.handleTeamGradeSolution}
+                        distributionMode={state.distributionMode}
+                        setDistributionMode={functions.setDistributionMode}
+                        team={team} />
                       <span>Участников: {team.membersCount}</span>
                       <span>Лимит: {formatLimit(team.maxSize)}</span>
                     </div>
@@ -319,14 +361,41 @@ export default function TeamsTab({ courseId, userRole }: TeamsTabProps) {
                     <div className="members-empty">Пока нет участников</div>
                   ) : (
                     <div className="team-members-list">
-                      {team.members.map((member) => (
-                        <div key={member.user.id} className="team-member-item">
-                          <span className="team-member-name">{member.user.displayName}</span>
-                          {member.category && (
-                            <span className="team-member-category">{member.category.title}</span>
-                          )}
-                        </div>
-                      ))}
+                      {team.members.map((member) => {
+                        const isCaptain = state.captains.some((c) => c.userId === member.user.id);
+                        const studentGrade = state.distribution?.students.find(
+                          (s) => s.student.id === member.user.id
+                        );
+                        return (
+                          <div key={member.user.id} className="team-member-item">
+                            <span className="team-member-name">{member.user.displayName}</span>
+                            {state.distribution?.distributionMode === 'MANUAL' && isCaptain && (
+                              <div>
+                                <button
+                                  className="submit-button"
+                                  onClick={() => functions.handleOpenCaptainGradeModal()}
+                                >
+                                  Распределить оценки
+                                </button>
+                              </div>
+                            )}
+                            <CaptainGradeDialog
+                              showCaptainGradeModal={state.showCaptainGradeModal}
+                              setShowCaptainGradeModal={functions.setShowCaptainGradeModal}
+                              handleCaptainGradeDistribution={functions.handleCaptainGradeDistribution}
+                              members={members}
+                              setCaptainDistribution={functions.setCaptainDistribution}
+                              captainDistribution={state.captainDistribution}
+                              handleGradeChange={functions.handleGradeChange}
+                            />
+                            {studentGrade && (
+                              <span className="team-member-name">Оценка: {studentGrade.grade}</span>
+                            )}
+                            {member.category && (
+                              <span className="team-member-category">{member.category.title}</span>
+                            )}
+                          </div>);
+                      })}
                     </div>
                   )}
                 </div>
