@@ -185,7 +185,7 @@ describe('Тестирование командных оценок', () => {
         expect(mockedTeamGradesService.upsertGrade).toHaveBeenCalled();
         expect(setShowTeamGradeModalMock).not.toHaveBeenCalled();
         expect(setSelectedTeamMock).not.toHaveBeenCalled();
-        expect(handleDistributionModeFuncMock).not.toHaveBeenCalled();
+        expect(handleDistributionModeFuncMock).toHaveBeenCalled();
         expect(window.alert).toHaveBeenCalledWith('Ошибка выставления оценки команде');
     });
 

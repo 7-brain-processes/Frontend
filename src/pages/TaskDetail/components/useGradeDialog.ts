@@ -45,10 +45,11 @@ export const handleTeamGradeSolutionFunc = async (courseId: string | undefined, 
     if (!courseId || !postId || !teamId) return;
 
     try {
+        handleDistributionModeFunc(courseId, postId, teamId, distributionMode);
+
         await teamGradesService.upsertGrade(courseId, postId, teamId, {
             grade: gradeValue,
         });
-        handleDistributionModeFunc(courseId, postId, teamId, distributionMode);
         setShowTeamGradeModal(false);
         setSelectedTeam(null);
         window.location.reload();
