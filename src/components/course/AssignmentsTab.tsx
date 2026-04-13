@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AssignmentsTab.css';
-import { PostDto, CourseRole, SolutionDto, PostType, SolutionStatus } from '../../types/api';
-import { postsService, solutionsService } from '../../api/services';
+import { PostDto, CourseRole, SolutionDto, PostType, SolutionStatus, CourseCategoryDto } from '../../types/api';
+import { categoryService, postsService, solutionsService, teamRequirementTemplateService } from '../../api/services';
 import { FormControl, MenuItem, Select } from "@mui/material";
+import { TeamRequirementTemplateDto } from '../../types/TeamRequirementTemplate';
+import { randomUUID } from 'crypto';
 
 interface AssignmentsTabProps {
   courseId: string;
@@ -13,11 +15,13 @@ interface AssignmentsTabProps {
 const translateTeamFormationMode = {
   'FREE': 'самостоятельное',
   'DRAFT': 'драфт',
+  'CAPTAIN_SELECTION': 'драфт',
   'RANDOM_SHUFFLE': 'рандомное'
 }
 
 export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabProps) {
   const navigate = useNavigate();
+  type TeamFormationModeValue = PostDto['teamFormationMode'] | '';
   const [assignments, setAssignments] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<PostDto | null>(null);
@@ -33,11 +37,19 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     title: '',
     content: '',
     deadline: '',
-    teamFormationMode: ''
+    teamFormationMode: '' as TeamFormationModeValue
   });
+  const [templateForm, setTemplateForm] = useState({
+    name: `Шаблон ${randomUUID()}`,
+    minTeamSize: 0,
+    maxTeamSize: 0,
+    requiredCategoryId: ''
+  });
+  const [categories, setCategories] = useState<CourseCategoryDto[]>([]);
 
   useEffect(() => {
     loadAssignments();
+    loadCategoriesFunc();
   }, [courseId]);
 
   const toDateTimeLocal = (isoString: string | undefined | null): string => {
@@ -61,6 +73,19 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const loadCategoriesFunc = async () => {
+    if (!courseId) return false;
+
+    try {
+      const categories = await categoryService.listCategories(courseId);
+      setCategories(categories);
+    } catch (err: any) {
+      console.error('Failed to load course:', err);
+      setCategories([]);
+      alert(err.message || 'Ошибка загрузки категорий');
+    }
   };
 
   const loadAssignments = async () => {
@@ -170,7 +195,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       title: assignment.title,
       content: assignment.content || '',
       deadline: toDateTimeLocal(assignment.deadline),
-      teamFormationMode: ''
+      teamFormationMode: assignment.teamFormationMode || ''
     });
     setDeadlineError('');
     setShowCreateAssignment(true);
@@ -188,6 +213,25 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
         console.error('Failed to delete assignment:', err);
         alert(err.message || 'Ошибка удаления задания');
       }
+    }
+  };
+
+  const createTeamRequirementTemplate = async () => {
+    try {
+      const template = await teamRequirementTemplateService.createTemplate(courseId, templateForm);
+      return template.id;
+    } catch (err: any) {
+      console.error('Failed to save assignment:', err);
+      alert(err.message || 'Ошибка сохранения требований к командам');
+    }
+  };
+
+  const applayTeamRequirementTemplate = async (templateId: string, newPostId: string) => {
+    try {
+      await teamRequirementTemplateService.applayTemplate(courseId, templateId, { postId: newPostId })
+    } catch (err: any) {
+      console.error('Failed to save assignment:', err);
+      alert(err.message || 'Ошибка применения требований к командам');
     }
   };
 
@@ -209,15 +253,23 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
           title: assignmentForm.title,
           content: assignmentForm.content || undefined,
           deadline: assignmentForm.deadline ? new Date(assignmentForm.deadline).toISOString() : undefined,
+          teamFormationMode: assignmentForm.teamFormationMode || undefined,
         });
         setAssignments(assignments.map(a => (a.id === editingAssignment.id ? updatedPost : a)));
       } else {
+        const templateId = await createTeamRequirementTemplate();
+        if (!templateId) {
+          return false;
+        }
         const newPost = await postsService.createPost(courseId, {
           title: assignmentForm.title,
           content: assignmentForm.content || undefined,
           type: 'TASK',
           deadline: assignmentForm.deadline ? new Date(assignmentForm.deadline).toISOString() : undefined,
+          teamFormationMode: assignmentForm.teamFormationMode || undefined,
+          teamRequirementTemplateId: templateId
         });
+        await applayTeamRequirementTemplate(templateId, newPost.id);
         setAssignments([...assignments, newPost]);
       }
 
@@ -690,8 +742,47 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                     onChange={e => setAssignmentForm({ ...assignmentForm, teamFormationMode: e.target.value })}
                   >
                     <MenuItem value={'FREE'}>Самостоятельное распределение</MenuItem>
-                    <MenuItem value={'DRAFT'}>Драфт распределение</MenuItem>
+                    <MenuItem value={'CAPTAIN_SELECTION'}>Драфт распределение</MenuItem>
                     <MenuItem value={'RANDOM_SHUFFLE'}>Рандомное распределение</MenuItem>
+                  </Select>
+                </FormControl>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="assignment-content">Минимальный размер команды</label>
+                <input
+                  id="assignment-content"
+                  type="number"
+                  value={templateForm.minTeamSize}
+                  onChange={e => setTemplateForm({ ...templateForm, minTeamSize: Number(e.target.value) })}
+                  placeholder="Введите минимальный размер команды"
+                  data-testid="assignment-content-input"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="assignment-content">Максимальный размер команды</label>
+                <input
+                  id="assignment-content"
+                  value={templateForm.maxTeamSize}
+                  type="number"
+                  onChange={e => setTemplateForm({ ...templateForm, maxTeamSize: Number(e.target.value) })}
+                  placeholder="Введите максимальный размер команды"
+                  data-testid="assignment-content-input"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="assignment-deadline">Допустимые категории студентов</label>
+                <FormControl fullWidth>
+                  <Select
+                    id="demo-simple-select"
+                    value={templateForm.requiredCategoryId}
+                    onChange={e => setTemplateForm({ ...templateForm, requiredCategoryId: e.target.value })}
+                  >
+                    {categories.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.title}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </div>
@@ -707,7 +798,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
             </div>
           </div>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }

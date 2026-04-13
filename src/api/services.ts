@@ -5,4 +5,8 @@ export * from './solutions';
 export * from './members';
 export * from './invites';
 export * from './category';
-
+export * from './teams';
+export * from './teamFormation';
+export * from './teamInvitations';
+export * from './teamGrades';
+export * from './teamRequirementTemplate';

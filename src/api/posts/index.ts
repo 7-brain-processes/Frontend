@@ -11,6 +11,7 @@ import { listPostComments } from './listPostComments';
 import { createPostComment } from './createPostComment';
 import { updatePostComment } from './updatePostComment';
 import { deletePostComment } from './deletePostComment';
+import { listAvailableTeams } from './listAvailableTeams';
 
 export { listPosts } from './listPosts';
 export { createPost } from './createPost';
@@ -25,6 +26,7 @@ export { listPostComments } from './listPostComments';
 export { createPostComment } from './createPostComment';
 export { updatePostComment } from './updatePostComment';
 export { deletePostComment } from './deletePostComment';
+export { listAvailableTeams } from './listAvailableTeams';
 
 export const postsService = {
   listPosts,
@@ -40,4 +42,5 @@ export const postsService = {
   createPostComment,
   updatePostComment,
   deletePostComment,
+  listAvailableTeams,
 };

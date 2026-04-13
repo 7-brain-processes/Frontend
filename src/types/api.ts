@@ -8,3 +8,7 @@ export * from './Comment';
 export * from './Solution';
 export * from './Error';
 export * from './AuthApi';
+export * from './Category';
+export * from './Team';
+export * from './TeamFormation';
+export * from './TeamInvitation';

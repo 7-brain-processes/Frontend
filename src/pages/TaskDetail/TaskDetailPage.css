@@ -200,6 +200,601 @@
   gap: 10px;
 }
 
+.teams-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.teams-section-header h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.teams-section-header p {
+  margin: 0;
+  color: #5f6368;
+}
+
+.teams-state {
+  padding: 16px;
+  border: 1px dashed #dadce0;
+  border-radius: 12px;
+  background: #f8f9fa;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.teams-state-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-style: solid;
+  border-color: #f1b5b0;
+  background: #fce8e6;
+  color: #b3261e;
+}
+
+.teams-state-success {
+  border-style: solid;
+  border-color: #b7dfc2;
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.current-team-panel,
+.available-teams-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.current-team-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.teams-list {
+  display: grid;
+  gap: 12px;
+}
+
+.team-card {
+  padding: 16px 18px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.team-card-current {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
+}
+
+.team-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.team-name {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.team-capacity {
+  font-size: 14px;
+  color: #5f6368;
+}
+
+.team-joined-at {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.team-created-at {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.team-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.team-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.team-badge-current {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.team-badge-full {
+  background: #fce8e6;
+  color: #b3261e;
+}
+
+.team-badge-locked {
+  background: #fff8e1;
+  color: #8d6e00;
+}
+
+.team-categories {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-members-section {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-categories-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5f6368;
+}
+
+.team-categories-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.team-category-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f1f3f4;
+  color: #3c4043;
+  font-size: 13px;
+}
+
+.team-members-list {
+  display: grid;
+  gap: 8px;
+}
+
+.team-member-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8f9fa;
+}
+
+.team-member-name {
+  color: #202124;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.team-member-category {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f1f3f4;
+  color: #3c4043;
+  font-size: 13px;
+}
+
+.team-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.auto-formation-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auto-formation-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.auto-formation-header h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.auto-formation-header p {
+  margin: 0;
+  color: #5f6368;
+}
+
+.auto-formation-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.auto-formation-form {
+  padding: 16px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  background: #f8f9fa;
+}
+
+.auto-formation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auto-formation-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #3c4043;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.auto-formation-field input {
+  padding: 10px 12px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.auto-formation-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.auto-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #3c4043;
+}
+
+.auto-formation-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.auto-formation-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.auto-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auto-panel h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.auto-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auto-summary-item {
+  padding: 14px;
+  border-radius: 12px;
+  background: #f8f9fa;
+  border: 1px solid #dadce0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auto-summary-item strong {
+  font-size: 22px;
+  color: #202124;
+}
+
+.auto-summary-item span {
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.auto-generated-teams,
+.auto-students-list {
+  display: grid;
+  gap: 10px;
+}
+
+.auto-note {
+  padding: 14px;
+  border-radius: 12px;
+  background: #fff8e1;
+  border: 1px solid #f1d18a;
+  color: #7a5a00;
+  font-size: 14px;
+}
+
+.auto-student-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8f9fa;
+  border: 1px solid #dadce0;
+}
+
+.auto-student-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202124;
+}
+
+.captains-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.captains-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.captains-header h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.captains-header p {
+  margin: 0;
+  color: #5f6368;
+}
+
+.captains-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.captain-role-banner {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #b7dfc2;
+  background: #e6f4ea;
+  color: #137333;
+  font-size: 14px;
+}
+
+.student-draft-banner {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #d2e3fc;
+  background: #eef3fd;
+  color: #174ea6;
+  font-size: 14px;
+}
+
+.captains-list {
+  display: grid;
+  gap: 12px;
+}
+
+.captain-card {
+  padding: 16px 18px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.captain-card-current {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
+}
+
+.captain-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.captain-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: #202124;
+}
+
+.captain-username {
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.captain-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.captain-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.captain-flow-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.captain-flow-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.captain-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.captain-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.captain-panel h5 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.captain-students-list {
+  display: grid;
+  gap: 10px;
+}
+
+.captain-student-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.captain-student-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.captain-student-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.captain-student-meta {
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.captain-student-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.student-invitations-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.student-invitations-list {
+  display: grid;
+  gap: 12px;
+}
+
+.student-invitation-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.student-invitation-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.student-invitation-title {
+  font-size: 15px;
+  color: #202124;
+}
+
+.student-invitation-meta {
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.student-invitation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .task-material-item {
   display: flex;
   align-items: center;
@@ -909,6 +1504,61 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  .team-card-header,
+  .teams-state-error,
+  .team-member-row,
+  .auto-formation-header,
+  .auto-student-item,
+  .captains-header,
+  .captain-flow-header,
+  .captain-student-card,
+  .student-invitation-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .team-badges {
+    justify-content: flex-start;
+  }
+
+  .team-actions {
+    justify-content: stretch;
+  }
+
+  .team-actions button {
+    width: 100%;
+  }
+
+  .auto-formation-grid,
+  .auto-formation-panels,
+  .auto-summary,
+  .captain-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auto-formation-header-actions,
+  .auto-formation-actions,
+  .captains-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .auto-formation-header-actions button,
+  .auto-formation-actions button,
+  .captains-actions button {
+    width: 100%;
+  }
+
+  .captain-student-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .captain-student-actions button,
+  .student-invitation-actions button {
+    width: 100%;
   }
 
   .solution-actions {

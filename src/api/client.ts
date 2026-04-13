@@ -49,6 +49,21 @@ export const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
+  return baseApiRequest<T>(endpoint, options, true);
+};
+
+export const apiRequestPreserveErrors = async <T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> => {
+  return baseApiRequest<T>(endpoint, options, false);
+};
+
+const baseApiRequest = async <T>(
+  endpoint: string,
+  options: RequestInit,
+  redirectOnForbidden: boolean
+): Promise<T> => {
   const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -72,7 +87,7 @@ export const apiRequest = async <T>(
       throw new Error('Unauthorized');
     }
 
-    if (shouldRedirectToNotFound(response.status, endpoint)) {
+    if (redirectOnForbidden && shouldRedirectToNotFound(response.status, endpoint)) {
       redirectToNotFound();
       throw new Error('Access denied');
     }
