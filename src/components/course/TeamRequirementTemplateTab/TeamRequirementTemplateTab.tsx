@@ -17,22 +17,7 @@ const TeamRequirementTemplateTab = ({ courseId, userRole }: TeamRequirementTempl
             <div className="categories-section">
                 <div className="section-header">
                     <h2>Шаблоны требований к команде</h2>
-                    {/*{userRole === 'TEACHER' ? (
-                        <button
-                            className="create-category-button"
-                            onClick={() => functions.handleCreateCategory()}
-                        >
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                            </svg>
-                            Создать категорию
-                        </button>) : (
-                        null
-                    )}*/}
                 </div>
-                {/* <CreatCategoryDialog setShowCreateCategory={functions.setShowCreateCategory} categoryForm={state.categoryForm} setCategoryForm={functions.setCategoryForm}
-                    editingCategory={state.editingCategory} handleSaveCategory={functions.handleSaveCategory} showCreateCategory={state.showCreateCategory} handleToggle={functions.handleToggle} />
-*/}
                 {state.templates.length === 0 ? (
                     <div className="empty-categories">
                         <p>Доступных шаблонов нет</p>
