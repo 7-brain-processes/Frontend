@@ -6,6 +6,7 @@ import TeamsTab from '../../components/course/TeamsTab';
 import { generateColor } from '../../components/CourseCard';
 import { useCourseDetailPage } from './hooks/useCourseDetailPage';
 import './CourseDetailPage.css';
+import TeamRequirementTemplateTab from '../../components/course/TeamRequirementTemplateTab/TeamRequirementTemplateTab';
 
 const CourseDetailPage = () => {
   const { state, functions } = useCourseDetailPage();
@@ -142,6 +143,13 @@ const CourseDetailPage = () => {
           >
             Команды
           </button>
+          <button
+            className={`course-tab ${activeTab === 'teamplates' ? 'active' : ''}`}
+            onClick={() => setActiveTab('teamplates')}
+            data-testid="tab-teams"
+          >
+            Шаблоны требований к командам
+          </button>
         </div>
 
         <div className="course-content">
@@ -163,6 +171,10 @@ const CourseDetailPage = () => {
 
           {activeTab === 'teams' && (
             <TeamsTab courseId={course.id} userRole={userRole} />
+          )}
+
+          {activeTab === 'teamplates' && (
+            <TeamRequirementTemplateTab courseId={course.id} userRole={userRole} />
           )}
         </div>
       </main>

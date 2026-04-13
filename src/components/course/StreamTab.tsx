@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PostDto, CourseRole, PostType } from '../../types/api';
-import { FileDto } from '../../types';
-import { postsService } from '../../api/services';
+import { CourseCategoryDto, FileDto } from '../../types';
+import { categoryService, postsService, teamRequirementTemplateService } from '../../api/services';
 import './StreamTab.css';
 import PublicCommentsDialog from '../../pages/PublicComments/PublicCommentsDialog';
 import { usePublicCommentsDialog } from '../../pages/PublicComments/hooks/usePublicCommentsDialog';
 import { FormControl, MenuItem, Select } from '@mui/material';
+import { randomUUID } from 'crypto';
 
 interface StreamTabProps {
   courseId: string;
@@ -37,6 +38,26 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const [loadingMaterialsPostId, setLoadingMaterialsPostId] = useState<string | null>(null);
   const [titleError, setTitleError] = useState('');
   const [deadlineError, setDeadlineError] = useState('');
+  const [templateForm, setTemplateForm] = useState({
+    name: `Шаблон ${randomUUID()}`,
+    minTeamSize: 0,
+    maxTeamSize: 0,
+    requiredCategoryId: ''
+  });
+  const [categories, setCategories] = useState<CourseCategoryDto[]>([]);
+
+  const loadCategoriesFunc = async () => {
+    if (!courseId) return false;
+
+    try {
+      const categories = await categoryService.listCategories(courseId);
+      setCategories(categories);
+    } catch (err: any) {
+      console.error('Failed to load course:', err);
+      setCategories([]);
+      alert(err.message || 'Ошибка загрузки категорий');
+    }
+  };
 
   const toDateTimeLocal = (isoString: string | undefined | null): string => {
     if (!isoString) return '';
@@ -61,6 +82,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 
   useEffect(() => {
     loadPosts();
+    loadCategoriesFunc();
   }, [courseId]);
 
   const loadPosts = async () => {
@@ -131,6 +153,25 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     }
   };
 
+  const createTeamRequirementTemplate = async () => {
+    try {
+      const template = await teamRequirementTemplateService.createTemplate(courseId, templateForm);
+      return template.id;
+    } catch (err: any) {
+      console.error('Failed to save assignment:', err);
+      alert(err.message || 'Ошибка сохранения требований к командам');
+    }
+  };
+
+  const applayTeamRequirementTemplate = async (templateId: string, newPostId: string) => {
+    try {
+      await teamRequirementTemplateService.applayTemplate(courseId, templateId, { postId: newPostId })
+    } catch (err: any) {
+      console.error('Failed to save assignment:', err);
+      alert(err.message || 'Ошибка применения требований к командам');
+    }
+  };
+
   const handleSavePost = async () => {
     if (!postForm.title.trim()) {
       setTitleError('Введите название поста');
@@ -168,24 +209,49 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
         setPosts(posts.map((p) => (p.id === editingPost.id ? updatedPost : p)));
         await loadPosts();
       } else {
-        const newPost = await postsService.createPost(courseId, {
-          title: postForm.title,
-          content: postForm.content || undefined,
-          type: postForm.type,
-          deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
-          teamFormationMode: postForm.type === 'TASK' ? postForm.teamFormationMode || undefined : undefined,
-        });
+        if (postForm.type === 'TASK') {
+          const templateId = await createTeamRequirementTemplate();
+          if (!templateId) {
+            return false;
+          }
+          const newPost = await postsService.createPost(courseId, {
+            title: postForm.title,
+            content: postForm.content || undefined,
+            type: postForm.type,
+            deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
+            teamFormationMode: postForm.teamFormationMode || undefined,
+          });
+          await applayTeamRequirementTemplate(templateId, newPost.id);
 
-        if (selectedFiles.length > 0) {
-          for (const file of selectedFiles) {
-            try {
-              await postsService.uploadPostMaterial(courseId, newPost.id, file);
-            } catch (err) {
-              console.error('Failed to upload file:', err);
+          if (selectedFiles.length > 0) {
+            for (const file of selectedFiles) {
+              try {
+                await postsService.uploadPostMaterial(courseId, newPost.id, file);
+              } catch (err) {
+                console.error('Failed to upload file:', err);
+              }
             }
           }
         }
+        else {
+          const newPost = await postsService.createPost(courseId, {
+            title: postForm.title,
+            content: postForm.content || undefined,
+            type: postForm.type,
+            deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
+            teamFormationMode: undefined,
+          });
 
+          if (selectedFiles.length > 0) {
+            for (const file of selectedFiles) {
+              try {
+                await postsService.uploadPostMaterial(courseId, newPost.id, file);
+              } catch (err) {
+                console.error('Failed to upload file:', err);
+              }
+            }
+          }
+        }
         await loadPosts();
       }
 
@@ -558,6 +624,44 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                         <MenuItem value={'FREE'}>Самостоятельное распределение</MenuItem>
                         <MenuItem value={'CAPTAIN_SELECTION'}>Драфт распределение</MenuItem>
                         <MenuItem value={'RANDOM_SHUFFLE'}>Рандомное распределение</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="assignment-content">Минимальный размер команды</label>
+                    <input
+                      id="assignment-content"
+                      type="number"
+                      value={templateForm.minTeamSize}
+                      onChange={e => setTemplateForm({ ...templateForm, minTeamSize: Number(e.target.value) })}
+                      placeholder="Введите минимальный размер команды"
+                      data-testid="assignment-content-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="assignment-content">Максимальный размер команды</label>
+                    <input
+                      id="assignment-content"
+                      value={templateForm.maxTeamSize}
+                      type="number"
+                      onChange={e => setTemplateForm({ ...templateForm, maxTeamSize: Number(e.target.value) })}
+                      placeholder="Введите максимальный размер команды"
+                      data-testid="assignment-content-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="assignment-deadline">Допустимые категории студентов</label>
+                    <FormControl fullWidth>
+                      <Select
+                        id="demo-simple-select"
+                        value={templateForm.requiredCategoryId}
+                        onChange={e => setTemplateForm({ ...templateForm, requiredCategoryId: e.target.value })}
+                      >
+                        {categories.map((category) => (
+                          <MenuItem key={category.id} value={category.id}>
+                            {category.title}
+                          </MenuItem>
+                        ))}
                       </Select>
                     </FormControl>
                   </div>

@@ -8,6 +8,7 @@ export interface PostDto {
   content: string;
   type: PostType;
   teamFormationMode: 'FREE' | 'DRAFT' | 'CAPTAIN_SELECTION' | 'RANDOM_SHUFFLE';
+  teamRequirementTemplateId: string;
   deadline: string | null;
   author: UserDto;
   materialsCount: number;
@@ -23,6 +24,7 @@ export interface CreatePostRequest {
   content?: string;
   type: PostType;
   teamFormationMode?: 'FREE' | 'DRAFT' | 'CAPTAIN_SELECTION' | 'RANDOM_SHUFFLE';
+  teamRequirementTemplateId?: string;
   deadline?: string;
 }
 
