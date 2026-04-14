@@ -1,22 +1,24 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { authService, postsService, solutionsService, teamFormationService, teamInvitationsService, teamsService } from "../../../api/services";
+import { authService, postsService, solutionsService, teamFormationService, teamGradesService, teamInvitationsService, teamsService } from "../../../api/services";
 import { listSolutionFiles, downloadSolutionFile, deleteSolution } from "../../../api/solutions";
 import {
     AutoTeamFormationRequest,
     AutoTeamFormationResultDto,
-    CaptainTeamDto,
+    CaptainTeamMemberDto,
     CaptainDto,
     PostDto,
     SolutionDto,
     CourseRole,
     FileDto,
+    GradeVoteStatusDto,
     CommentDto,
     CourseTeamAvailabilityDto,
     StudentTeamDto,
     TeamFormationStudentDto,
     TeamInvitationDto,
     UserDto,
+    CaptainStudentGradeEntry,
 } from "../../../types/api";
 
 type TeamsErrorCode = '403' | '404' | 'generic' | null;
@@ -34,6 +36,32 @@ const isNoCurrentTeamError = (err: any): boolean => {
 
 const isCaptainSelectionMode = (mode: PostDto['teamFormationMode'] | undefined | null): boolean => {
     return mode === 'CAPTAIN_SELECTION' || mode === 'DRAFT';
+};
+
+const normalizeCaptains = (data: unknown): CaptainDto[] => {
+    if (Array.isArray(data)) {
+        return data;
+    }
+
+    if (
+        data &&
+        typeof data === 'object' &&
+        'captains' in data &&
+        Array.isArray((data as { captains?: unknown }).captains)
+    ) {
+        return (data as { captains: CaptainDto[] }).captains;
+    }
+
+    return [];
+};
+
+const normalizeCaptainTeam = (data: unknown): CaptainTeamMemberDto[] => {
+    if (Array.isArray(data)) {
+        return data;
+    }
+
+    return [];
+
 };
 
 export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = false) => {
@@ -76,7 +104,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [captainsSubmitting, setCaptainsSubmitting] = useState(false);
     const [captainsError, setCaptainsError] = useState<string | null>(null);
     const [captainsSuccess, setCaptainsSuccess] = useState<string | null>(null);
-    const [captainTeam, setCaptainTeam] = useState<CaptainTeamDto | null>(null);
+    const [captainTeam, setCaptainTeam] = useState<CaptainTeamMemberDto[]>([]);
     const [captainTeamLoading, setCaptainTeamLoading] = useState(false);
     const [captainStudents, setCaptainStudents] = useState<TeamFormationStudentDto[]>([]);
     const [captainStudentsLoading, setCaptainStudentsLoading] = useState(false);
@@ -89,6 +117,12 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [studentInvitationActionId, setStudentInvitationActionId] = useState<string | null>(null);
     const [studentInvitationsError, setStudentInvitationsError] = useState<string | null>(null);
     const [studentInvitationsSuccess, setStudentInvitationsSuccess] = useState<string | null>(null);
+    const [gradeVoteStatus, setGradeVoteStatus] = useState<GradeVoteStatusDto | null>(null);
+    const [gradeVoteLoading, setGradeVoteLoading] = useState(false);
+    const [gradeVoteSubmitting, setGradeVoteSubmitting] = useState(false);
+    const [gradeVoteError, setGradeVoteError] = useState<string | null>(null);
+    const [gradeVoteSuccess, setGradeVoteSuccess] = useState<string | null>(null);
+    const [gradeVoteForm, setGradeVoteForm] = useState<CaptainStudentGradeEntry[]>([]);
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [solutionText, setSolutionText] = useState('');
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -106,6 +140,19 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             loadTask();
         }
     }, [courseId, taskId, userRole, loadingRole]);
+
+    useEffect(() => {
+        if (!gradeVoteStatus) return;
+
+        if (currentTeam?.members?.length) {
+            syncGradeVoteForm(gradeVoteStatus, currentTeam.members.map((member) => member.user));
+            return;
+        }
+
+        if (captainTeam.length > 0) {
+            syncGradeVoteForm(gradeVoteStatus, captainTeam.map((member) => ({ id: member.userId })));
+        }
+    }, [gradeVoteStatus, currentTeam, captainTeam]);
 
     const resetTeamsState = () => {
         setAvailableTeams([]);
@@ -142,7 +189,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         setCaptainsSubmitting(false);
         setCaptainsError(null);
         setCaptainsSuccess(null);
-        setCaptainTeam(null);
+        setCaptainTeam([]);
         setCaptainTeamLoading(false);
         setCaptainStudents([]);
         setCaptainStudentsLoading(false);
@@ -155,6 +202,15 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         setStudentInvitationActionId(null);
         setStudentInvitationsError(null);
         setStudentInvitationsSuccess(null);
+    };
+
+    const resetGradeVoteState = () => {
+        setGradeVoteStatus(null);
+        setGradeVoteLoading(false);
+        setGradeVoteSubmitting(false);
+        setGradeVoteError(null);
+        setGradeVoteSuccess(null);
+        setGradeVoteForm([]);
     };
 
     const getTeamsErrorCode = (err: any): Exclude<TeamsErrorCode, null> => {
@@ -260,6 +316,99 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         await Promise.all([loadAvailableTeams(), loadCurrentTeam()]);
     };
 
+    const syncGradeVoteForm = (status: GradeVoteStatusDto, members: { id: string }[]) => {
+        const existingVote = status.myVote ?? [];
+
+        if (existingVote.length > 0) {
+            setGradeVoteForm(existingVote.map((item) => ({
+                studentId: item.student.id,
+                grade: item.grade,
+            })));
+            return;
+        }
+
+        setGradeVoteForm(members.map((member) => ({
+            studentId: member.id,
+            grade: 0,
+        })));
+    };
+
+    const loadGradeVote = async (members?: { id: string }[]) => {
+        if (!courseId || !taskId || userRole !== 'STUDENT') return;
+
+        try {
+            setGradeVoteLoading(true);
+            setGradeVoteError(null);
+
+            const status = await teamGradesService.getGradeVote(courseId, taskId).catch((err: any) => {
+                const code = getHttpStatus(err);
+                if (code === 403 || code === 404) {
+                    return null;
+                }
+                throw err;
+            });
+
+            if (!status) {
+                resetGradeVoteState();
+                return;
+            }
+
+            setGradeVoteStatus(status);
+            const sourceMembers = members ?? currentTeam?.members.map((member) => member.user) ?? [];
+            syncGradeVoteForm(status, sourceMembers);
+        } catch (err: any) {
+            console.error('Failed to load grade vote:', err);
+            setGradeVoteStatus(null);
+            setGradeVoteForm([]);
+            setGradeVoteError(err.message || 'Не удалось загрузить голосование');
+        } finally {
+            setGradeVoteLoading(false);
+        }
+    };
+
+    const handleGradeVoteFieldChange = (studentId: string, grade: number) => {
+        setGradeVoteForm((prev) => prev.map((item) => (
+            item.studentId === studentId
+                ? { ...item, grade: Number.isFinite(grade) ? Math.max(0, grade) : 0 }
+                : item
+        )));
+    };
+
+    const handleSubmitGradeVote = async () => {
+        if (!courseId || !taskId || !gradeVoteStatus) return;
+
+        const total = gradeVoteForm.reduce((sum, item) => sum + item.grade, 0);
+
+        if (gradeVoteForm.length === 0) {
+            setGradeVoteError('Нет участников для голосования');
+            return;
+        }
+
+        if (total !== gradeVoteStatus.teamGrade) {
+            setGradeVoteError(`Сумма голосов должна быть равна ${gradeVoteStatus.teamGrade}`);
+            return;
+        }
+
+        try {
+            setGradeVoteSubmitting(true);
+            setGradeVoteError(null);
+            setGradeVoteSuccess(null);
+
+            const status = await teamGradesService.submitGradeVote(courseId, taskId, {
+                grades: gradeVoteForm,
+            });
+
+            setGradeVoteStatus(status);
+            syncGradeVoteForm(status, gradeVoteForm.map((item) => ({ id: item.studentId })));
+            setGradeVoteSuccess('Голос успешно отправлен');
+        } catch (err: any) {
+            console.error('Failed to submit grade vote:', err);
+            setGradeVoteError(err.message || 'Не удалось отправить голос');
+        } finally {
+            setGradeVoteSubmitting(false);
+        }
+    };
+
     const loadTask = async () => {
         if (!courseId || !taskId) return;
 
@@ -294,21 +443,33 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             if (userRole === 'STUDENT') {
                 if (data.teamFormationMode === 'FREE') {
                     await refreshTeamBlocks();
+                } else if (isCaptainSelectionMode(data.teamFormationMode)) {
+                    setAvailableTeams([]);
+                    setTeamsLoading(false);
+                    setTeamsError(null);
+                    setTeamsErrorCode(null);
+                    setTeamActionError(null);
+                    setTeamActionSuccess(null);
+                    setActionTeamId(null);
+                    await loadCurrentTeam();
                 } else {
                     resetTeamsState();
                 }
 
                 resetAutoFormationState();
                 if (isCaptainSelectionMode(data.teamFormationMode)) {
-                    const captainsData = await teamFormationService.listCaptains(courseId, taskId).catch(() => []);
+                    const captainsData = normalizeCaptains(await teamFormationService.listCaptains(courseId, taskId).catch(() => []));
                     setCaptains(captainsData);
                     if (authUser && captainsData.some((captain) => captain.userId === authUser.id)) {
                         await loadCaptainFlowData();
+                        await loadGradeVote();
                     } else {
                         await loadStudentInvitations();
+                        await loadGradeVote();
                     }
                 } else {
                     resetCaptainsState();
+                    await loadGradeVote();
                 }
 
                 await loadMySolution();
@@ -320,11 +481,12 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                     resetAutoFormationState();
                 }
                 if (isCaptainSelectionMode(data.teamFormationMode)) {
-                    const captainsData = await teamFormationService.listCaptains(courseId, taskId).catch(() => []);
+                    const captainsData = normalizeCaptains(await teamFormationService.listCaptains(courseId, taskId).catch(() => []));
                     setCaptains(captainsData);
                 } else {
                     resetCaptainsState();
                 }
+                resetGradeVoteState();
                 await loadSolutions();
             }
         } catch (err: any) {
@@ -386,7 +548,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                 }
                 throw err;
             });
-            setCaptains(data);
+            setCaptains(normalizeCaptains(data));
         } catch (err: any) {
             console.error('Failed to load captains:', err);
             setCaptains([]);
@@ -405,7 +567,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setCaptainsSuccess(null);
 
             const data = await teamFormationService.selectCaptains(courseId, taskId, { reshuffle });
-            setCaptains(data);
+            setCaptains(normalizeCaptains(data));
             setCaptainsSuccess(
                 reshuffle
                     ? 'Список капитанов обновлен повторным запуском'
@@ -444,11 +606,11 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                 }),
             ]);
 
-            setCaptainTeam(team);
-            setCaptainStudents(students);
+            setCaptainTeam(normalizeCaptainTeam(team));
+            setCaptainStudents(Array.isArray(students) ? students : []);
         } catch (err: any) {
             console.error('Failed to load captain flow data:', err);
-            setCaptainTeam(null);
+            setCaptainTeam([]);
             setCaptainStudents([]);
             setCaptainInviteError(err.message || 'Не удалось загрузить данные капитана');
         } finally {
@@ -492,7 +654,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                 throw err;
             });
 
-            setStudentInvitations(invitations);
+            setStudentInvitations(Array.isArray(invitations) ? invitations : []);
         } catch (err: any) {
             console.error('Failed to load student invitations:', err);
             setStudentInvitations([]);
@@ -513,6 +675,10 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             const updatedInvitation = await teamInvitationsService.respondToTeamInvitation(courseId, taskId, invitationId, { action });
             setStudentInvitations((prev) => prev.map((item) => item.id === invitationId ? updatedInvitation : item));
             setStudentInvitationsSuccess(action === 'accept' ? 'Приглашение принято' : 'Приглашение отклонено');
+            if (action === 'accept') {
+                await loadCurrentTeam();
+                await loadGradeVote();
+            }
             await loadStudentInvitations();
         } catch (err: any) {
             console.error('Failed to respond to invitation:', err);
@@ -664,6 +830,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             const response = await teamsService.enrollInTeam(courseId, taskId, teamId);
             setTeamActionSuccess(response.message);
             await refreshTeamBlocks();
+            await loadGradeVote();
         } catch (err: any) {
             console.error('Failed to enroll in team:', err);
             setTeamActionError(getTeamActionErrorMessage(getHttpStatus(err), err.message || ''));
@@ -682,6 +849,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             const response = await teamsService.leaveTeam(courseId, taskId, teamId);
             setTeamActionSuccess(response.message);
             await refreshTeamBlocks();
+            await loadGradeVote();
         } catch (err: any) {
             console.error('Failed to leave team:', err);
             setTeamActionError(getTeamActionErrorMessage(getHttpStatus(err), err.message || ''));
@@ -895,7 +1063,13 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             studentInvitationActionId,
             studentInvitationsError,
             studentInvitationsSuccess,
-            isCurrentUserCaptain: !!currentUser && captains.some((captain) => captain.userId === currentUser.id),
+            gradeVoteStatus,
+            gradeVoteLoading,
+            gradeVoteSubmitting,
+            gradeVoteError,
+            gradeVoteSuccess,
+            gradeVoteForm,
+            isCurrentUserCaptain: !!currentUser && normalizeCaptains(captains).some((captain) => captain.userId === currentUser.id),
             showSubmitForm,
             solutionText,
             selectedFiles,
@@ -937,6 +1111,9 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             handleSendCaptainInvitation,
             retryLoadStudentInvitations: loadStudentInvitations,
             handleRespondToInvitation,
+            retryLoadGradeVote: loadGradeVote,
+            handleGradeVoteFieldChange,
+            handleSubmitGradeVote,
             handleDownloadTaskMaterial: async (fileId: string, fileName: string) => {
                 if (!courseId || !taskId) return;
 

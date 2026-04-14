@@ -497,8 +497,8 @@
 }
 
 .auto-formation-panels {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
@@ -539,6 +539,12 @@
 .auto-summary-item span {
   font-size: 13px;
   color: #5f6368;
+}
+
+.auto-generated-at {
+  color: #5f6368;
+  font-size: 13px;
+  margin-top: 12px;
 }
 
 .auto-generated-teams,
@@ -795,6 +801,102 @@
   justify-content: flex-end;
 }
 
+.grade-vote-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grade-vote-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grade-vote-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.grade-vote-mode {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f3f7ff;
+  border: 1px solid #c7d7fe;
+  color: #1f3b8f;
+  font-weight: 600;
+}
+
+.grade-vote-status-list,
+.grade-vote-inputs,
+.grade-vote-final-list {
+  display: grid;
+  gap: 10px;
+}
+
+.grade-vote-status-row,
+.grade-vote-final-row,
+.grade-vote-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8f9fa;
+  border: 1px solid #dadce0;
+}
+
+.grade-vote-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.grade-vote-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.grade-vote-form-header h4,
+.grade-vote-final h4 {
+  margin: 0;
+}
+
+.grade-vote-student {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.grade-vote-student span {
+  color: #5f6368;
+  font-size: 13px;
+}
+
+.grade-vote-input-row input {
+  width: 92px;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+}
+
+.grade-vote-total {
+  font-weight: 600;
+}
+
+.grade-vote-total-valid {
+  color: #137333;
+}
+
+.grade-vote-total-invalid {
+  color: #b3261e;
+}
+
 .task-material-item {
   display: flex;
   align-items: center;
@@ -984,6 +1086,12 @@
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
+}
+
+.solution-meta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .solution-meta .grade-value {

@@ -1,12 +1,12 @@
 import { apiRequestPreserveErrors } from '../client';
-import { CaptainDto, SelectCaptainsRequest } from '../../types';
+import { SelectCaptainsRequest, SelectCaptainsResultDto } from '../../types';
 
 export const selectCaptains = (
   courseId: string,
   postId: string,
   data: SelectCaptainsRequest = {}
-): Promise<CaptainDto[]> => {
-  return apiRequestPreserveErrors<CaptainDto[]>(
+): Promise<SelectCaptainsResultDto> => {
+  return apiRequestPreserveErrors<SelectCaptainsResultDto>(
     `/courses/${courseId}/posts/${postId}/team-formation/captains/select`,
     {
       method: 'POST',

@@ -41,3 +41,21 @@ export interface CaptainStudentGradeEntry {
 export interface CaptainGradeDistributionRequest {
     grades: CaptainStudentGradeEntry[];
 }
+
+export interface GradeVoteVoterDto {
+    user: UserDto;
+    hasVoted: boolean;
+}
+
+export interface GradeVoteStatusDto {
+    teamId: string;
+    teamGrade: number;
+    finalized: boolean;
+    voters: GradeVoteVoterDto[];
+    myVote: StudentDistributedGradeDto[] | null;
+    finalDistribution: StudentDistributedGradeDto[] | null;
+}
+
+export interface SubmitGradeVoteRequest {
+    grades: CaptainStudentGradeEntry[];
+}

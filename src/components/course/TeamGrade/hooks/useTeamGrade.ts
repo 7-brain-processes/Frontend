@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import { CaptainGradeDistributionRequest, SetTeamGradeDistributionModeRequest, TeamGradeDistributionDto, TeamGradeDto } from "../../../../types/TeamGrade";
 import { teamGradesService } from "../../../../api/teamGrades";
 import { CourseTeamDto } from "../../../../types/Team";
@@ -97,8 +96,7 @@ const getHttpStatus = (err: any): number | null => {
     return match ? Number(match[1]) : null;
 };
 
-export const useTeamGrade = () => {
-    const { courseId, taskId } = useParams<{ courseId: string; taskId: string }>();
+export const useTeamGrade = (courseId?: string, postId?: string) => {
     const [grade, setGrade] = useState<TeamGradeDto | null>(null);
     const [distributionMode, setDistributionMode] = useState<SetTeamGradeDistributionModeRequest>({
         distributionMode: 'MANUAL'
@@ -116,11 +114,11 @@ export const useTeamGrade = () => {
     const [captains, setCaptains] = useState<CaptainDto[]>([]);
 
     const loadCaptains = async () => {
-        if (!courseId || !taskId) return;
+        if (!courseId || !postId) return;
 
         try {
 
-            const data = await teamFormationService.listCaptains(courseId, taskId).catch((err: any) => {
+            const data = await teamFormationService.listCaptains(courseId, postId).catch((err: any) => {
                 const status = getHttpStatus(err);
                 if (status === 404) {
                     return [];
@@ -135,24 +133,24 @@ export const useTeamGrade = () => {
     };
 
     const loadTeamGrade = () => {
-        loadTeamGradeFunc(courseId, taskId, selectedTeam?.id, setGrade);
+        loadTeamGradeFunc(courseId, postId, selectedTeam?.id, setGrade);
     };
 
     const loadDistribution = () => {
-        loadDistributionFunc(courseId, taskId, selectedTeam?.id, setDistribution);
+        loadDistributionFunc(courseId, postId, selectedTeam?.id, setDistribution);
     }
 
     const handleTeamGradeSolution = () => {
-        handleTeamGradeSolutionFunc(courseId, taskId, selectedTeam?.id, distributionMode, setShowTeamGradeModal, gradeValue, setSelectedTeam);
+        handleTeamGradeSolutionFunc(courseId, postId, selectedTeam?.id, distributionMode, setShowTeamGradeModal, gradeValue, setSelectedTeam);
     };
 
     const handleCaptainGradeDistribution = () => {
-        handleCaptainGradeDistributionFunc(courseId, taskId, captainDistribution, setDistribution);
+        handleCaptainGradeDistributionFunc(courseId, postId, captainDistribution, setDistribution);
     };
 
     const handleOpenGradeModal = (team: CourseTeamDto) => {
         setSelectedTeam(team);
-        setGradeValue(grade?.grade || 0);
+        setGradeValue(0);
         setShowTeamGradeModal(true);
     };
 
@@ -176,10 +174,19 @@ export const useTeamGrade = () => {
     };
 
     useEffect(() => {
+        loadCaptains();
+    }, [courseId, postId]);
+
+    useEffect(() => {
+        if (!selectedTeam?.id) return;
         loadTeamGrade();
         loadDistribution();
-        loadCaptains();
-    }, []);
+    }, [courseId, postId, selectedTeam?.id]);
+
+    useEffect(() => {
+        if (!showTeamGradeModal) return;
+        setGradeValue(grade?.grade || 0);
+    }, [grade, showTeamGradeModal]);
 
     return {
         state: { grade, distribution, showTeamGradeModal, selectedTeam, gradeValue, distributionMode, captains, showCaptainGradeModal, captainDistribution },

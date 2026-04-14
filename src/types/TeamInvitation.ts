@@ -1,5 +1,6 @@
 import { UserDto } from './User';
-import { EnrollmentTeamStatusDto, CourseTeamMemberDto } from './Team';
+import { EnrollmentTeamStatusDto } from './Team';
+import { CourseCategoryDto } from './Category';
 
 export type TeamInvitationAction = 'accept' | 'decline';
 
@@ -11,12 +12,11 @@ export interface RespondToTeamInvitationRequest {
   action: TeamInvitationAction;
 }
 
-export interface CaptainTeamDto {
-  teamId: string;
-  teamName: string;
-  membersCount: number;
-  maxSize: number | null;
-  members: CourseTeamMemberDto[];
+export interface CaptainTeamMemberDto {
+  userId: string;
+  username: string;
+  displayName: string;
+  category?: CourseCategoryDto | null;
 }
 
 export interface TeamInvitationDto {
@@ -26,5 +26,5 @@ export interface TeamInvitationDto {
   respondedAt: string | null;
   captain: UserDto;
   student?: UserDto | null;
-  team: EnrollmentTeamStatusDto;
+  team?: EnrollmentTeamStatusDto | null;
 }

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTaskDetailPage } from './hooks/useTaskDetailPage';
-import { coursesService } from '../../api/services';
-import { CourseRole } from '../../types/api';
+import { coursesService, teamsService } from '../../api/services';
+import { CourseRole, CourseTeamDto } from '../../types/api';
+import { useTeamGrade } from '../../components/course/TeamGrade/hooks/useTeamGrade';
+import GradeDialog from '../../components/course/TeamGrade/GradeDialog';
 import './TaskDetailPage.css';
 
 const translateTeamFormationMode = {
@@ -13,9 +15,11 @@ const translateTeamFormationMode = {
 } as const;
 
 const TaskDetailPage = () => {
-  const { courseId } = useParams<{ courseId: string; taskId: string }>();
+  const { courseId, taskId } = useParams<{ courseId: string; taskId: string }>();
   const [userRole, setUserRole] = useState<CourseRole>('STUDENT');
   const [loadingRole, setLoadingRole] = useState(true);
+  const [courseTeams, setCourseTeams] = useState<CourseTeamDto[]>([]);
+  const teamGrade = useTeamGrade(courseId, taskId);
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -33,6 +37,22 @@ const TaskDetailPage = () => {
 
     loadCourse();
   }, [courseId]);
+
+  useEffect(() => {
+    const loadCourseTeams = async () => {
+      if (!courseId || userRole !== 'TEACHER') return;
+
+      try {
+        const teams = await teamsService.listCourseTeams(courseId);
+        setCourseTeams(teams);
+      } catch (err) {
+        console.error('Failed to load course teams for task grading:', err);
+        setCourseTeams([]);
+      }
+    };
+
+    loadCourseTeams();
+  }, [courseId, userRole]);
 
   const { state, functions } = useTaskDetailPage(userRole, loadingRole);
 
@@ -89,6 +109,37 @@ const TaskDetailPage = () => {
 
   const formatAutoFormationStudent = (student: { displayName: string; username: string }) => {
     return student.displayName || student.username;
+  };
+
+  const votingMembers = state.currentTeam?.members?.map((member) => ({
+    id: member.user.id,
+    displayName: member.user.displayName,
+    username: member.user.username,
+  })) || (state.isCurrentUserCaptain
+    ? state.captainTeam.map((member) => ({
+        id: member.userId,
+        displayName: member.displayName,
+        username: member.username,
+      }))
+    : []);
+
+  const gradeVoteTotal = state.gradeVoteForm.reduce((sum, item) => sum + item.grade, 0);
+
+  const findVotingMember = (studentId: string) => {
+    return votingMembers.find((member) => member.id === studentId);
+  };
+
+  const handleOpenTeamGradeModal = (studentId: string) => {
+    const team = courseTeams.find((courseTeam) =>
+      courseTeam.members.some((member) => member.user.id === studentId)
+    );
+
+    if (!team) {
+      alert('Не удалось определить команду этого участника для оценки');
+      return;
+    }
+
+    teamGrade.functions.handleOpenGradeModal(team);
   };
 
   return (
@@ -201,7 +252,7 @@ const TaskDetailPage = () => {
                       <div className="team-members-section">
                         <span className="team-categories-label">Участники команды:</span>
                         <div className="team-members-list">
-                          {state.currentTeam.members.map((member) => (
+                          {(state.currentTeam.members || []).map((member) => (
                             <div key={member.user.id} className="team-member-row">
                               <span className="team-member-name">{member.user.displayName}</span>
                               {member.category && (
@@ -410,21 +461,26 @@ const TaskDetailPage = () => {
                       ) : (
                         <div className="auto-summary">
                           <div className="auto-summary-item">
-                            <strong>{state.autoFormationResult.teamCount}</strong>
+                            <strong>{state.autoFormationResult.formedTeams}</strong>
                             <span>Команд</span>
                           </div>
                           <div className="auto-summary-item">
-                            <strong>{state.autoFormationResult.assignedStudentsCount}</strong>
+                            <strong>{state.autoFormationResult.assignedStudents}</strong>
                             <span>Распределено</span>
                           </div>
                           <div className="auto-summary-item">
-                            <strong>{state.autoFormationResult.unassignedStudentsCount}</strong>
+                            <strong>{state.autoFormationResult.unassignedStudents}</strong>
                             <span>Нераспределено</span>
                           </div>
+                          {state.autoFormationResult.generatedAt && (
+                            <div className="auto-generated-at">
+                              Сформировано: {formatTeamCreatedAt(state.autoFormationResult.generatedAt)}
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      {state.autoFormationResult?.teams && state.autoFormationResult.teams.length > 0 ? (
+                      {state.autoFormationResult?.teams && state.autoFormationResult.teams.length > 0 && (
                         <div className="auto-generated-teams">
                           {state.autoFormationResult.teams.map((team) => (
                             <div key={team.teamId} className="team-card">
@@ -435,11 +491,7 @@ const TaskDetailPage = () => {
                             </div>
                           ))}
                         </div>
-                      ) : state.autoFormationResult ? (
-                        <div className="auto-note">
-                          Backend вернул только сводный результат без полного списка команд. Для `7141` может понадобиться отдельный endpoint.
-                        </div>
-                      ) : null}
+                      )}
                     </div>
 
                     <div className="auto-panel">
@@ -518,6 +570,50 @@ const TaskDetailPage = () => {
                   </div>
                 )}
 
+                {!state.isCurrentUserCaptain && userRole === 'STUDENT' && (state.currentTeamLoading || state.currentTeamError || state.currentTeam) && (
+                  <div className="current-team-panel">
+                    <div className="current-team-header">
+                      <h4>Моя команда</h4>
+                    </div>
+
+                    {state.currentTeamLoading ? (
+                      <div className="teams-state">Загрузка текущей команды...</div>
+                    ) : state.currentTeamError ? (
+                      <div className="teams-state teams-state-error">
+                        <span>{state.currentTeamError}</span>
+                      </div>
+                    ) : state.currentTeam ? (
+                      <div className="team-card team-card-current">
+                        <div className="team-card-header">
+                          <div>
+                            <h4 className="team-name">{state.currentTeam.teamName}</h4>
+                            <div className="team-capacity">
+                              Участники: {formatTeamCapacity(state.currentTeam.membersCount, state.currentTeam.maxSize)}
+                            </div>
+                            <div className="team-joined-at">
+                              Вступили: {formatJoinedAt(state.currentTeam.joinedAt)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="team-members-section">
+                          <span className="team-categories-label">Участники команды:</span>
+                          <div className="team-members-list">
+                            {(state.currentTeam.members || []).map((member) => (
+                              <div key={member.user.id} className="team-member-row">
+                                <span className="team-member-name">{member.user.displayName}</span>
+                                {member.category && (
+                                  <span className="team-member-category">{member.category.title}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
                 {state.captainsSuccess && (
                   <div className="teams-state teams-state-success">{state.captainsSuccess}</div>
                 )}
@@ -577,25 +673,16 @@ const TaskDetailPage = () => {
                         <h5>Текущий состав команды</h5>
                         {state.captainTeamLoading ? (
                           <div className="teams-state">Загрузка команды капитана...</div>
-                        ) : !state.captainTeam ? (
-                          <div className="teams-state">Команда капитана пока недоступна.</div>
+                        ) : state.captainTeam.length === 0 ? (
+                          <div className="teams-state">Пока команда не сформирована.</div>
                         ) : (
                           <div className="team-card team-card-current">
-                            <div className="team-card-header">
-                              <div>
-                                <h4 className="team-name">{state.captainTeam.teamName}</h4>
-                                <div className="team-capacity">
-                                  Участники: {formatTeamCapacity(state.captainTeam.membersCount, state.captainTeam.maxSize)}
-                                </div>
-                              </div>
-                            </div>
-
                             <div className="team-members-section">
                               <span className="team-categories-label">Участники команды:</span>
                               <div className="team-members-list">
-                                {state.captainTeam.members.map((member) => (
-                                  <div key={member.user.id} className="team-member-row">
-                                    <span className="team-member-name">{member.user.displayName}</span>
+                                {state.captainTeam.map((member) => (
+                                  <div key={member.userId} className="team-member-row">
+                                    <span className="team-member-name">{member.displayName}</span>
                                     {member.category && (
                                       <span className="team-member-category">{member.category.title}</span>
                                     )}
@@ -674,17 +761,19 @@ const TaskDetailPage = () => {
                     ) : (
                       <div className="student-invitations-list">
                         {state.studentInvitations.map((invitation) => {
-                          const isPending = invitation.status.toUpperCase() === 'PENDING';
+                          const isPending = invitation.status?.toUpperCase() === 'PENDING';
                           const actionInProgress = state.studentInvitationActionId === invitation.id;
+                          const teamName = invitation.team?.teamName || 'Команда капитана';
+                          const captainName = invitation.captain?.displayName || invitation.captain?.username || 'Капитан';
 
                           return (
                             <div key={invitation.id} className="student-invitation-card">
                               <div className="student-invitation-main">
                                 <div className="student-invitation-title">
-                                  Команда: <strong>{invitation.team.teamName}</strong>
+                                  Команда: <strong>{teamName}</strong>
                                 </div>
                                 <div className="student-invitation-meta">
-                                  Капитан: {invitation.captain.displayName}
+                                  Капитан: {captainName}
                                 </div>
                                 <div className="student-invitation-meta">
                                   Статус: {invitation.status}
@@ -718,6 +807,129 @@ const TaskDetailPage = () => {
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {userRole === 'STUDENT' && (state.gradeVoteLoading || state.gradeVoteStatus || state.gradeVoteError) && (
+              <div className="task-description grade-vote-section">
+                <div className="captains-header">
+                  <div>
+                    <h3>Распределение оценки</h3>
+                    <p>Голосование команды по распределению общей оценки между участниками.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-small"
+                    onClick={() => functions.retryLoadGradeVote()}
+                    disabled={state.gradeVoteLoading || state.gradeVoteSubmitting}
+                  >
+                    Обновить
+                  </button>
+                </div>
+
+                {state.gradeVoteSuccess && (
+                  <div className="teams-state teams-state-success">{state.gradeVoteSuccess}</div>
+                )}
+
+                {state.gradeVoteError && (
+                  <div className="teams-state teams-state-error">
+                    <span>{state.gradeVoteError}</span>
+                  </div>
+                )}
+
+                {state.gradeVoteLoading ? (
+                  <div className="teams-state">Загрузка голосования...</div>
+                ) : state.gradeVoteStatus ? (
+                  <div className="grade-vote-content">
+                    <div className="grade-vote-summary">
+                      <div className="auto-summary-item">
+                        <strong>{state.gradeVoteStatus.teamGrade}</strong>
+                        <span>Общая оценка команды</span>
+                      </div>
+                      <div className="auto-summary-item">
+                        <strong>{state.gradeVoteStatus.finalized ? 'Да' : 'Нет'}</strong>
+                        <span>Голосование завершено</span>
+                      </div>
+                      <div className="auto-summary-item">
+                        <strong>{state.gradeVoteStatus.voters.filter((voter) => voter.hasVoted).length}</strong>
+                        <span>Проголосовали</span>
+                      </div>
+                    </div>
+
+                    <div className="grade-vote-mode">Распределение оценки: голосование команды</div>
+
+                    <div className="grade-vote-status-list">
+                      {state.gradeVoteStatus.voters.map((voter) => (
+                        <div key={voter.user.id} className="grade-vote-status-row">
+                          <span>{voter.user.displayName}</span>
+                          <span className={`team-badge ${voter.hasVoted ? 'team-badge-current' : 'team-badge-locked'}`}>
+                            {voter.hasVoted ? 'Проголосовал' : 'Еще не голосовал'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {state.gradeVoteStatus.myVote && (
+                      <div className="teams-state teams-state-success">Ваш голос уже отправлен.</div>
+                    )}
+
+                    {!state.gradeVoteStatus.finalized && !state.gradeVoteStatus.myVote && votingMembers.length > 0 && (
+                      <div className="grade-vote-form">
+                        <div className="grade-vote-form-header">
+                          <h4>Ваш голос</h4>
+                          <div className={`grade-vote-total ${gradeVoteTotal === state.gradeVoteStatus.teamGrade ? 'grade-vote-total-valid' : 'grade-vote-total-invalid'}`}>
+                            Сумма: {gradeVoteTotal} / {state.gradeVoteStatus.teamGrade}
+                          </div>
+                        </div>
+
+                        <div className="grade-vote-inputs">
+                          {state.gradeVoteForm.map((entry) => {
+                            const member = findVotingMember(entry.studentId);
+
+                            return (
+                              <label key={entry.studentId} className="grade-vote-input-row">
+                                <div className="grade-vote-student">
+                                  <strong>{member?.displayName || entry.studentId}</strong>
+                                  {member?.username && <span>@{member.username}</span>}
+                                </div>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  value={entry.grade}
+                                  onChange={(e) => functions.handleGradeVoteFieldChange(entry.studentId, Number(e.target.value))}
+                                />
+                              </label>
+                            );
+                          })}
+                        </div>
+
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={functions.handleSubmitGradeVote}
+                          disabled={state.gradeVoteSubmitting}
+                        >
+                          {state.gradeVoteSubmitting ? 'Отправка...' : 'Отправить голос'}
+                        </button>
+                      </div>
+                    )}
+
+                    {state.gradeVoteStatus.finalized && state.gradeVoteStatus.finalDistribution && (
+                      <div className="grade-vote-final">
+                        <h4>Итоговое распределение</h4>
+                        <div className="grade-vote-final-list">
+                          {state.gradeVoteStatus.finalDistribution.map((item) => (
+                            <div key={item.student.id} className="grade-vote-final-row">
+                              <span>{item.student.displayName}</span>
+                              <strong>{item.grade}</strong>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </div>
             )}
 
@@ -954,6 +1166,7 @@ const TaskDetailPage = () => {
                         {solution.grade !== null && (
                           <span className="grade-value">{solution.grade}</span>
                         )}
+                        <div className="solution-meta-actions">
                         <button
                           className="btn-secondary btn-edit-grade"
                           onClick={() => functions.handleOpenGradeModal(solution)}
@@ -1002,6 +1215,7 @@ const TaskDetailPage = () => {
                           </button>
                         </div>
                       </div>
+                    </div>
                     </div>
                   );
                 })}
@@ -1066,6 +1280,18 @@ const TaskDetailPage = () => {
           </div>
         </div>
       )}
+
+      <GradeDialog
+        showTeamGradeModal={teamGrade.state.showTeamGradeModal}
+        selectedTeam={teamGrade.state.selectedTeam}
+        setShowTeamGradeModal={teamGrade.functions.setShowTeamGradeModal}
+        gradeValue={teamGrade.state.gradeValue}
+        setGradeValue={teamGrade.functions.setGradeValue}
+        handleTeamGradeSolution={teamGrade.functions.handleTeamGradeSolution}
+        distributionMode={teamGrade.state.distributionMode}
+        setDistributionMode={teamGrade.functions.setDistributionMode}
+        team={teamGrade.state.selectedTeam || ({ id: '', name: 'Команда', createdAt: '', membersCount: 0, members: [], maxSize: null, selfEnrollmentEnabled: false, isFull: false, categories: [], categoryId: null, categoryTitle: null } as CourseTeamDto)}
+      />
     </div>
   );
 };

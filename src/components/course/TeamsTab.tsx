@@ -15,6 +15,7 @@ import CaptainGradeDialog from './TeamGrade/CaptainGradeDialog';
 interface TeamsTabProps {
   courseId: string;
   userRole: CourseRole;
+  postId?: string;
 }
 
 const getHttpStatus = (err: any): number | null => {
@@ -64,9 +65,9 @@ const translateTeamGradeDistributionMode = {
   'AUTO_EQUAL': 'автоматическое'
 };
 
-export default function TeamsTab({ courseId, userRole }: TeamsTabProps) {
+export default function TeamsTab({ courseId, userRole, postId }: TeamsTabProps) {
 
-  const { state, functions } = useTeamGrade();
+  const { state, functions } = useTeamGrade(courseId, postId);
 
   const [teams, setTeams] = useState<CourseTeamDto[]>([]);
   const [loading, setLoading] = useState(true);
