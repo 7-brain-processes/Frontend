@@ -10,10 +10,9 @@ interface CaptainGradeDialogProps {
     setCaptainDistribution: (captainDistribution: CaptainGradeDistributionRequest) => void;
     captainDistribution: CaptainGradeDistributionRequest;
     handleGradeChange: (studentId: string, value: string) => void;
-    validationError: string;
 }
 
-const CaptainGradeDialog: React.FC<CaptainGradeDialogProps> = ({ showCaptainGradeModal, setShowCaptainGradeModal, handleCaptainGradeDistribution, members, setCaptainDistribution, captainDistribution, handleGradeChange, validationError }) => {
+const CaptainGradeDialog: React.FC<CaptainGradeDialogProps> = ({ showCaptainGradeModal, setShowCaptainGradeModal, handleCaptainGradeDistribution, members, setCaptainDistribution, captainDistribution, handleGradeChange }) => {
     return (
         <div>
             {showCaptainGradeModal && (
@@ -46,11 +45,6 @@ const CaptainGradeDialog: React.FC<CaptainGradeDialogProps> = ({ showCaptainGrad
                                     </div>
                                 );
                             })}
-                            {validationError && (
-                                <div style={{ color: 'red', marginTop: '10px', fontSize: '14px' }}>
-                                    {validationError}
-                                </div>
-                            )}
                         </div>
                         <div className="modal-footer">
                             <button
