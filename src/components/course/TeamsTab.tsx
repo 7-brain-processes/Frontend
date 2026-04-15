@@ -387,6 +387,7 @@ export default function TeamsTab({ courseId, userRole }: TeamsTabProps) {
                               setCaptainDistribution={functions.setCaptainDistribution}
                               captainDistribution={state.captainDistribution}
                               handleGradeChange={functions.handleGradeChange}
+                              validationError={state.validationError}
                             />
                             {studentGrade && (
                               <span className="team-member-name">Оценка: {studentGrade.grade}</span>

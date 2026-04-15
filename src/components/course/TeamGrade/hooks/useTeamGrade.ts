@@ -114,6 +114,7 @@ export const useTeamGrade = () => {
         }
     );
     const [captains, setCaptains] = useState<CaptainDto[]>([]);
+    const [validationError, setValidationError] = useState<string>('');
 
     const loadCaptains = async () => {
         if (!courseId || !taskId) return;
@@ -147,6 +148,16 @@ export const useTeamGrade = () => {
     };
 
     const handleCaptainGradeDistribution = () => {
+        const totalMembers = captainDistribution.grades.length;
+        const totalSum = captainDistribution.grades.reduce((sum, entry) => sum + Number(entry.grade), 0);
+        const currentAverage = totalSum / totalMembers;
+
+        if (grade && Math.abs(currentAverage - grade.grade) === 0) {
+            setValidationError(`Ошибка: среднее арифметическое (${currentAverage.toFixed(2)}) не совпадает с оценкой команды (${grade.grade})`);
+            return;
+        }
+
+        setValidationError('');
         handleCaptainGradeDistributionFunc(courseId, taskId, captainDistribution, setDistribution);
     };
 
@@ -182,7 +193,7 @@ export const useTeamGrade = () => {
     }, []);
 
     return {
-        state: { grade, distribution, showTeamGradeModal, selectedTeam, gradeValue, distributionMode, captains, showCaptainGradeModal, captainDistribution },
+        state: { grade, distribution, showTeamGradeModal, selectedTeam, gradeValue, distributionMode, captains, showCaptainGradeModal, captainDistribution, validationError },
         functions: {
             handleOpenGradeModal,
             setShowTeamGradeModal,
