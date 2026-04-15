@@ -9,20 +9,22 @@ interface GradeDialogProps {
     setShowTeamGradeModal: (showTeamGradeModal: boolean) => void;
     gradeValue: number;
     setGradeValue: (gradeValue: number) => void;
+    commentValue?: string;
+    setCommentValue?: (commentValue: string) => void;
     handleTeamGradeSolution: () => void;
     distributionMode: SetTeamGradeDistributionModeRequest;
     setDistributionMode: (distributionMode: SetTeamGradeDistributionModeRequest) => void;
     team: CourseTeamDto;
 }
 
-const GradeDialog: React.FC<GradeDialogProps> = ({ showTeamGradeModal, selectedTeam, setShowTeamGradeModal, gradeValue, setGradeValue, handleTeamGradeSolution, distributionMode, setDistributionMode, team }) => {
+const GradeDialog: React.FC<GradeDialogProps> = ({ showTeamGradeModal, selectedTeam, setShowTeamGradeModal, gradeValue, setGradeValue, commentValue = '', setCommentValue, handleTeamGradeSolution, distributionMode, setDistributionMode, team }) => {
     return (
         <div>
             {showTeamGradeModal && selectedTeam && (
                 <div className="modal-overlay" onClick={() => setShowTeamGradeModal(false)}>
                     <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>Оценить решение</h2>
+                            <h2>Оценить команду</h2>
                             <button
                                 className="close-button"
                                 onClick={() => setShowTeamGradeModal(false)}
@@ -47,18 +49,33 @@ const GradeDialog: React.FC<GradeDialogProps> = ({ showTeamGradeModal, selectedT
                                     onChange={(e) => setGradeValue(Number(e.target.value))}
                                 />
                             </div>
+                            {setCommentValue && (
+                                <div className="form-group">
+                                    <label htmlFor="grade-comment">Комментарий (необязательно)</label>
+                                    <textarea
+                                        id="grade-comment"
+                                        value={commentValue}
+                                        onChange={(e) => setCommentValue(e.target.value)}
+                                        maxLength={5000}
+                                        rows={4}
+                                        placeholder="Например: Хорошая командная работа"
+                                    />
+                                </div>
+                            )}
                             <div className="form-group">
                                 <label htmlFor="assignment-deadline">Режим распределения оценки</label>
                                 <FormControl fullWidth>
                                     <Select
                                         id="demo-simple-select"
-                                        value={distributionMode}
+                                        value={distributionMode.distributionMode}
                                         onChange={(e => setDistributionMode({
                                             distributionMode: e.target.value as TeamGradeDistributionMode
                                         }))}
                                     >
                                         <MenuItem value={'MANUAL'}>Капитан распределяет</MenuItem>
                                         <MenuItem value={'AUTO_EQUAL'}>Автоматически</MenuItem>
+                                        <MenuItem value={'CAPTAIN_MANUAL'}>Капитан вручную</MenuItem>
+                                        <MenuItem value={'TEAM_VOTE'}>Голосование команды</MenuItem>
                                     </Select>
                                 </FormControl>
                             </div>

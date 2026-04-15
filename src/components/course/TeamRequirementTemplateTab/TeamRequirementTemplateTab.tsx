@@ -39,7 +39,7 @@ const TeamRequirementTemplateTab = ({ courseId, userRole }: TeamRequirementTempl
                                             <span>Размер команды: {template.minTeamSize} - {template.maxTeamSize}</span>
                                         </div>
                                         <div className="category-details">
-                                            <span>Категория: {template.requiredCategory.title}</span>
+                                            <span>Категория: {template.requiredCategory?.title ?? 'Без категории'}</span>
                                         </div>
                                         {!template.active && (
                                             <div className="category-status">Не активен</div>

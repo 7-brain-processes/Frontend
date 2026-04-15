@@ -264,12 +264,57 @@
   gap: 12px;
 }
 
+.teacher-free-create-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.teacher-free-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.teacher-free-field span {
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.teacher-free-field input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #202124;
+}
+
+.teacher-free-field input:focus {
+  outline: none;
+  border-color: #1967d2;
+}
+
+@media (max-width: 768px) {
+  .teacher-free-create-form {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
+
 .team-card {
   padding: 16px 18px;
   border: 1px solid #dadce0;
   border-radius: 12px;
   background: #fff;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.team-card-unavailable {
+  background: #fafbfc;
+  border-color: #e2e5e9;
 }
 
 .team-card-current {
@@ -338,6 +383,16 @@
 .team-badge-locked {
   background: #fff8e1;
   color: #8d6e00;
+}
+
+.team-unavailable-reason {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #f1d18a;
+  background: #fff8e1;
+  color: #8d6e00;
+  font-size: 13px;
 }
 
 .team-categories {
@@ -815,8 +870,26 @@
 
 .grade-vote-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.grade-vote-summary .auto-summary-item {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  gap: 4px;
+}
+
+.grade-vote-summary .auto-summary-item strong {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.grade-vote-summary .auto-summary-item span {
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .grade-vote-mode {
@@ -1310,6 +1383,25 @@
   gap: 16px;
   font-size: 13px;
   color: #5f6368;
+}
+
+.solution-meta-stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.solution-meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.solution-meta-grade-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1976d2;
 }
 
 .teacher-section h3 {

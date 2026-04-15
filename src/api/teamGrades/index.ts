@@ -1,4 +1,5 @@
 import { getDistribution } from "./getDistribution";
+import { getMyTeamGrade } from "./getMyTeamGrade";
 import { getDistributionForm } from "./getDistributionForm";
 import { getGrade } from "./getGrade";
 import { getGradeVote } from "./getGradeVote";
@@ -8,6 +9,7 @@ import { submitGradeVote } from "./submitGradeVote";
 import { upsertGrade } from "./upsertGrade";
 
 export { getDistribution } from "./getDistribution";
+export { getMyTeamGrade } from "./getMyTeamGrade";
 export { getGrade } from "./getGrade";
 export { getGradeVote } from "./getGradeVote";
 export { setDistributionMode } from "./setDistributionMode";
@@ -18,6 +20,7 @@ export { submitGradeVote } from "./submitGradeVote";
 
 export const teamGradesService = {
     getGrade,
+    getMyTeamGrade,
     upsertGrade,
     setDistributionMode,
     getDistribution,

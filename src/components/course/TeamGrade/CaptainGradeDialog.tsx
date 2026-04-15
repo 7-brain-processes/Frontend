@@ -1,25 +1,36 @@
-import { MemberDto } from "../../../types";
 import { CaptainGradeDistributionRequest } from "../../../types/TeamGrade";
 import '../AssignmentsTab.css';
+
+interface CaptainMember {
+    user: {
+        id: string;
+        displayName: string;
+    };
+}
 
 interface CaptainGradeDialogProps {
     showCaptainGradeModal: boolean;
     setShowCaptainGradeModal: (showCaptainGradeModal: boolean) => void;
     handleCaptainGradeDistribution: () => void;
-    members: MemberDto[];
+    members: CaptainMember[];
     setCaptainDistribution: (captainDistribution: CaptainGradeDistributionRequest) => void;
     captainDistribution: CaptainGradeDistributionRequest;
     handleGradeChange: (studentId: string, value: string) => void;
 }
 
 const CaptainGradeDialog: React.FC<CaptainGradeDialogProps> = ({ showCaptainGradeModal, setShowCaptainGradeModal, handleCaptainGradeDistribution, members, setCaptainDistribution, captainDistribution, handleGradeChange }) => {
+    const filledGradesCount = captainDistribution.grades.filter((item) => Number.isFinite(item.grade) && item.grade > 0).length;
+
     return (
         <div>
             {showCaptainGradeModal && (
                 <div className="modal-overlay" onClick={() => setShowCaptainGradeModal(false)}>
-                    <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-dialog captain-grade-dialog" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>Распределить оценки</h2>
+                            <div className="captain-grade-header-content">
+                                <h2>Распределение оценки команды</h2>
+                                <p>Заполнено оценок: {filledGradesCount} из {members.length}</p>
+                            </div>
                             <button
                                 className="close-button"
                                 onClick={() => setShowCaptainGradeModal(false)}
@@ -29,24 +40,39 @@ const CaptainGradeDialog: React.FC<CaptainGradeDialogProps> = ({ showCaptainGrad
                                 </svg>
                             </button>
                         </div>
-                        <div className="modal-body">
+                        <div className="modal-body captain-grade-body">
+                            <div className="captain-grade-hint">
+                                Введите индивидуальную оценку для каждого участника команды.
+                            </div>
                             {members.map((member) => {
                                 const currentGrade = captainDistribution.grades.find(g => g.studentId === member.user.id);
                                 return (
-                                    <div key={member.user.id}>
-                                        <span>{member.user.displayName}</span>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={currentGrade?.grade ?? ""}
-                                            onChange={(e) => handleGradeChange(member.user.id, e.target.value)}
-                                            placeholder="Оценка"
-                                        />
+                                    <div key={member.user.id} className="captain-grade-row">
+                                        <div className="captain-grade-student">
+                                            <span className="captain-grade-name">{member.user.displayName}</span>
+                                        </div>
+                                        <div className="captain-grade-input-wrap">
+                                            <input
+                                                className="captain-grade-input"
+                                                type="number"
+                                                min="0"
+                                                value={currentGrade?.grade ?? ""}
+                                                onChange={(e) => handleGradeChange(member.user.id, e.target.value)}
+                                                placeholder="0"
+                                            />
+                                            <span className="captain-grade-input-label">баллов</span>
+                                        </div>
                                     </div>
                                 );
                             })}
                         </div>
                         <div className="modal-footer">
+                            <button
+                                className="btn-secondary"
+                                onClick={() => setCaptainDistribution({ grades: [] })}
+                            >
+                                Сбросить
+                            </button>
                             <button
                                 className="btn-secondary"
                                 onClick={() => setShowCaptainGradeModal(false)}

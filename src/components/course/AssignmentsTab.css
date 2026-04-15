@@ -835,3 +835,110 @@
   background: #f1f3f4;
 }
 
+.captain-grade-dialog {
+  max-width: 680px;
+  border-radius: 14px;
+}
+
+.captain-grade-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.captain-grade-header-content h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 400;
+  color: #202124;
+}
+
+.captain-grade-header-content p {
+  margin: 0;
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.captain-grade-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.captain-grade-hint {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f3f7ff;
+  border: 1px solid #d2e3fc;
+  color: #174ea6;
+  font-size: 13px;
+}
+
+.captain-grade-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #dadce0;
+  background: #f8f9fa;
+}
+
+.captain-grade-student {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.captain-grade-name {
+  font-size: 15px;
+  font-weight: 400;
+  color: #202124;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.captain-grade-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.captain-grade-input {
+  width: 88px;
+  border: 1px solid #c6dafc;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: #202124;
+}
+
+.captain-grade-input:focus {
+  outline: none;
+  border-color: #1967d2;
+  box-shadow: 0 0 0 2px rgba(25, 103, 210, 0.16);
+}
+
+.captain-grade-input-label {
+  font-size: 13px;
+  color: #5f6368;
+}
+
+@media (max-width: 640px) {
+  .captain-grade-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .captain-grade-input-wrap {
+    width: 100%;
+  }
+
+  .captain-grade-input {
+    width: 100%;
+  }
+}
+

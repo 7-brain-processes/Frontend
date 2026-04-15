@@ -12,6 +12,7 @@ import { createPostComment } from './createPostComment';
 import { updatePostComment } from './updatePostComment';
 import { deletePostComment } from './deletePostComment';
 import { listAvailableTeams } from './listAvailableTeams';
+import { createAssignmentTeam } from './createAssignmentTeam';
 
 export { listPosts } from './listPosts';
 export { createPost } from './createPost';
@@ -27,6 +28,7 @@ export { createPostComment } from './createPostComment';
 export { updatePostComment } from './updatePostComment';
 export { deletePostComment } from './deletePostComment';
 export { listAvailableTeams } from './listAvailableTeams';
+export { createAssignmentTeam } from './createAssignmentTeam';
 
 export const postsService = {
   listPosts,
@@ -43,4 +45,5 @@ export const postsService = {
   updatePostComment,
   deletePostComment,
   listAvailableTeams,
+  createAssignmentTeam,
 };

@@ -1,4 +1,4 @@
-import { apiRequest } from '../client';
+import { apiRequestPreserveErrors } from '../client';
 import { TeamGradeDto, UpsertTeamGradeRequest } from '../../types/TeamGrade';
 
 export const upsertGrade = (
@@ -7,7 +7,7 @@ export const upsertGrade = (
     teamId: string,
     data: UpsertTeamGradeRequest
 ): Promise<TeamGradeDto> => {
-    return apiRequest<TeamGradeDto>(`/courses/${courseId}/posts/${postId}/teams/${teamId}/grade`, {
+    return apiRequestPreserveErrors<TeamGradeDto>(`/courses/${courseId}/posts/${postId}/teams/${teamId}/grade`, {
         method: 'PUT',
         body: JSON.stringify(data),
     });

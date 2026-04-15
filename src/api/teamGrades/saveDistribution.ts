@@ -1,4 +1,4 @@
-import { apiRequest } from '../client';
+import { apiRequestPreserveErrors } from '../client';
 import { CaptainGradeDistributionRequest, TeamGradeDistributionDto } from '../../types/TeamGrade';
 
 export const saveDistribution = (
@@ -6,7 +6,7 @@ export const saveDistribution = (
     postId: string,
     data: CaptainGradeDistributionRequest
 ): Promise<TeamGradeDistributionDto> => {
-    return apiRequest<TeamGradeDistributionDto>(`/courses/${courseId}/posts/${postId}/captain-grade`, {
+    return apiRequestPreserveErrors<TeamGradeDistributionDto>(`/courses/${courseId}/posts/${postId}/captain-grade`, {
         method: 'PUT',
         body: JSON.stringify(data),
     });

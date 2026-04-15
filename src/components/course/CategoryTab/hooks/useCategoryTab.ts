@@ -68,6 +68,12 @@ export const loadMyCategoryFunc = async (courseId: string | undefined, setMyCate
         const category = await categoryService.getMyCategory(courseId);
         setMyCategory(category);
     } catch (err: any) {
+        const message = String(err?.message || '');
+        if (message.includes('404')) {
+            setMyCategory(null);
+            return;
+        }
+
         console.error('Failed to load course:', err);
         alert(err.message || 'Ошибка загрузки категории');
     }
@@ -77,7 +83,7 @@ export const deleteMyCategoryFunc = async (courseId: string | undefined, setMyCa
     if (!courseId) return false;
 
     try {
-        const category = await categoryService.setMyCategory(courseId, { categotyId: null });
+        const category = await categoryService.setMyCategory(courseId, { categoryId: null });
         setMyCategory(category);
     } catch (err: any) {
         console.error('Failed to load course:', err);
@@ -90,7 +96,7 @@ export const chooseMyCategoryFunc = async (courseId: string | undefined, categor
     if (!categoryId) return false;
 
     try {
-        const category = await categoryService.setMyCategory(courseId, { categotyId: categoryId });
+        const category = await categoryService.setMyCategory(courseId, { categoryId });
         setMyCategory(category);
     } catch (err: any) {
         console.error('Failed to load course:', err);

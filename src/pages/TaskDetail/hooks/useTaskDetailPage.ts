@@ -12,6 +12,8 @@ import {
     CourseRole,
     FileDto,
     GradeVoteStatusDto,
+    MyTeamGradeDto,
+    TeamGradeDto,
     CommentDto,
     CourseTeamAvailabilityDto,
     StudentTeamDto,
@@ -123,6 +125,9 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [gradeVoteError, setGradeVoteError] = useState<string | null>(null);
     const [gradeVoteSuccess, setGradeVoteSuccess] = useState<string | null>(null);
     const [gradeVoteForm, setGradeVoteForm] = useState<CaptainStudentGradeEntry[]>([]);
+    const [myTeamGrade, setMyTeamGrade] = useState<MyTeamGradeDto | null>(null);
+    const [myTeamGradeLoading, setMyTeamGradeLoading] = useState(false);
+    const [myTeamGradeError, setMyTeamGradeError] = useState<string | null>(null);
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [solutionText, setSolutionText] = useState('');
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -131,6 +136,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [showGradeModal, setShowGradeModal] = useState(false);
     const [selectedSolution, setSelectedSolution] = useState<SolutionDto | null>(null);
     const [gradeValue, setGradeValue] = useState<number>(0);
+    const [gradeComment, setGradeComment] = useState<string>('');
     const [solutionComments, setSolutionComments] = useState<Record<string, CommentDto[]>>({});
     const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
     const [submittingCommentId, setSubmittingCommentId] = useState<string | null>(null);
@@ -211,6 +217,12 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         setGradeVoteError(null);
         setGradeVoteSuccess(null);
         setGradeVoteForm([]);
+    };
+
+    const resetMyTeamGradeState = () => {
+        setMyTeamGrade(null);
+        setMyTeamGradeLoading(false);
+        setMyTeamGradeError(null);
     };
 
     const getTeamsErrorCode = (err: any): Exclude<TeamsErrorCode, null> => {
@@ -333,8 +345,50 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         })));
     };
 
-    const loadGradeVote = async (members?: { id: string }[]) => {
+    const loadMyTeamGrade = async () => {
+        if (!courseId || !taskId || userRole !== 'STUDENT') return null;
+
+        try {
+            setMyTeamGradeLoading(true);
+            setMyTeamGradeError(null);
+
+            const myTeamGradeResponse = await teamGradesService.getMyTeamGrade(courseId, taskId).catch((err: any) => {
+                const code = getHttpStatus(err);
+                if (code === 404) {
+                    return null;
+                }
+                throw err;
+            });
+
+            if (!myTeamGradeResponse) {
+                resetMyTeamGradeState();
+                resetGradeVoteState();
+                return null;
+            }
+
+            setMyTeamGrade(myTeamGradeResponse);
+            if (myTeamGradeResponse.distributionMode !== 'TEAM_VOTE') {
+                resetGradeVoteState();
+            }
+            return myTeamGradeResponse;
+        } catch (err: any) {
+            console.error('Failed to load my team grade:', err);
+            setMyTeamGrade(null);
+            setMyTeamGradeError(err.message || 'Не удалось загрузить оценку команды');
+            return null;
+        } finally {
+            setMyTeamGradeLoading(false);
+        }
+    };
+
+    const loadGradeVote = async (members?: { id: string }[], teamGradeInfo?: MyTeamGradeDto | null) => {
         if (!courseId || !taskId || userRole !== 'STUDENT') return;
+
+        const effectiveTeamGrade = teamGradeInfo ?? myTeamGrade;
+        if (effectiveTeamGrade?.distributionMode !== 'TEAM_VOTE') {
+            resetGradeVoteState();
+            return;
+        }
 
         try {
             setGradeVoteLoading(true);
@@ -342,7 +396,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
 
             const status = await teamGradesService.getGradeVote(courseId, taskId).catch((err: any) => {
                 const code = getHttpStatus(err);
-                if (code === 403 || code === 404) {
+                if (code === 400 || code === 403 || code === 404) {
                     return null;
                 }
                 throw err;
@@ -452,6 +506,15 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                     setTeamActionSuccess(null);
                     setActionTeamId(null);
                     await loadCurrentTeam();
+                } else if (data.teamFormationMode === 'RANDOM_SHUFFLE') {
+                    setAvailableTeams([]);
+                    setTeamsLoading(false);
+                    setTeamsError(null);
+                    setTeamsErrorCode(null);
+                    setTeamActionError(null);
+                    setTeamActionSuccess(null);
+                    setActionTeamId(null);
+                    await loadCurrentTeam();
                 } else {
                     resetTeamsState();
                 }
@@ -462,14 +525,29 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                     setCaptains(captainsData);
                     if (authUser && captainsData.some((captain) => captain.userId === authUser.id)) {
                         await loadCaptainFlowData();
-                        await loadGradeVote();
                     } else {
                         await loadStudentInvitations();
-                        await loadGradeVote();
                     }
-                } else {
+                }
+
+                const teamGradeInfo = await loadMyTeamGrade();
+                if (teamGradeInfo?.distributionMode === 'CAPTAIN_MANUAL') {
+                    const captainsData = normalizeCaptains(await teamFormationService.listCaptains(courseId, taskId).catch(() => []));
+                    setCaptains(captainsData);
+                    if (!currentTeam) {
+                        await loadCurrentTeam();
+                    }
+                    if (authUser && captainsData.some((captain) => captain.userId === authUser.id)) {
+                        await loadCaptainFlowData();
+                    }
+                } else if (!isCaptainSelectionMode(data.teamFormationMode)) {
                     resetCaptainsState();
-                    await loadGradeVote();
+                }
+
+                if (teamGradeInfo?.distributionMode === 'TEAM_VOTE') {
+                    await loadGradeVote(undefined, teamGradeInfo);
+                } else {
+                    resetGradeVoteState();
                 }
 
                 await loadMySolution();
@@ -507,18 +585,12 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
 
             const [result, students] = await Promise.all([
                 teamFormationService.getAutoFormationResult(courseId, taskId).catch((err: any) => {
-                    const status = getHttpStatus(err);
-                    if (status === 404) {
-                        return null;
-                    }
-                    throw err;
+                    console.error('Failed to load auto formation result:', err);
+                    return null;
                 }),
                 teamFormationService.listAutoFormationStudents(courseId, taskId).catch((err: any) => {
-                    const status = getHttpStatus(err);
-                    if (status === 404) {
-                        return [];
-                    }
-                    throw err;
+                    console.error('Failed to load auto formation students:', err);
+                    return [];
                 }),
             ]);
 
@@ -542,11 +614,8 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setCaptainsError(null);
 
             const data = await teamFormationService.listCaptains(courseId, taskId).catch((err: any) => {
-                const status = getHttpStatus(err);
-                if (status === 404) {
-                    return [];
-                }
-                throw err;
+                console.error('Failed to load captains:', err);
+                return [];
             });
             setCaptains(normalizeCaptains(data));
         } catch (err: any) {
@@ -591,18 +660,12 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
 
             const [team, students] = await Promise.all([
                 teamInvitationsService.getCaptainTeam(courseId, taskId).catch((err: any) => {
-                    const status = getHttpStatus(err);
-                    if (status === 404) {
-                        return null;
-                    }
-                    throw err;
+                    console.error('Failed to load captain team:', err);
+                    return null;
                 }),
                 teamInvitationsService.listCaptainAvailableStudents(courseId, taskId).catch((err: any) => {
-                    const status = getHttpStatus(err);
-                    if (status === 404) {
-                        return [];
-                    }
-                    throw err;
+                    console.error('Failed to load available students:', err);
+                    return [];
                 }),
             ]);
 
@@ -647,11 +710,8 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setStudentInvitationsError(null);
 
             const invitations = await teamInvitationsService.listStudentInvitations(courseId, taskId).catch((err: any) => {
-                const status = getHttpStatus(err);
-                if (status === 404) {
-                    return [];
-                }
-                throw err;
+                console.error('Failed to load student invitations:', err);
+                return [];
             });
 
             setStudentInvitations(Array.isArray(invitations) ? invitations : []);
@@ -677,7 +737,10 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setStudentInvitationsSuccess(action === 'accept' ? 'Приглашение принято' : 'Приглашение отклонено');
             if (action === 'accept') {
                 await loadCurrentTeam();
-                await loadGradeVote();
+                const teamGradeInfo = await loadMyTeamGrade();
+                if (teamGradeInfo?.distributionMode === 'TEAM_VOTE') {
+                    await loadGradeVote(undefined, teamGradeInfo);
+                }
             }
             await loadStudentInvitations();
         } catch (err: any) {
@@ -830,7 +893,10 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             const response = await teamsService.enrollInTeam(courseId, taskId, teamId);
             setTeamActionSuccess(response.message);
             await refreshTeamBlocks();
-            await loadGradeVote();
+            const teamGradeInfo = await loadMyTeamGrade();
+            if (teamGradeInfo?.distributionMode === 'TEAM_VOTE') {
+                await loadGradeVote(undefined, teamGradeInfo);
+            }
         } catch (err: any) {
             console.error('Failed to enroll in team:', err);
             setTeamActionError(getTeamActionErrorMessage(getHttpStatus(err), err.message || ''));
@@ -849,7 +915,10 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             const response = await teamsService.leaveTeam(courseId, taskId, teamId);
             setTeamActionSuccess(response.message);
             await refreshTeamBlocks();
-            await loadGradeVote();
+            const teamGradeInfo = await loadMyTeamGrade();
+            if (teamGradeInfo?.distributionMode === 'TEAM_VOTE') {
+                await loadGradeVote(undefined, teamGradeInfo);
+            }
         } catch (err: any) {
             console.error('Failed to leave team:', err);
             setTeamActionError(getTeamActionErrorMessage(getHttpStatus(err), err.message || ''));
@@ -899,20 +968,33 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const handleOpenGradeModal = (solution: SolutionDto) => {
         setSelectedSolution(solution);
         setGradeValue(solution.grade || 0);
+        setGradeComment('');
         setShowGradeModal(true);
     };
 
     const handleGradeSolution = async () => {
         if (!courseId || !taskId || !selectedSolution) return;
 
+        if (!Number.isFinite(gradeValue) || gradeValue < 0 || gradeValue > 100) {
+            alert('Оценка должна быть в диапазоне 0..100');
+            return;
+        }
+
+        if (gradeComment.length > 5000) {
+            alert('Комментарий не должен превышать 5000 символов');
+            return;
+        }
+
         try {
             await solutionsService.gradeSolution(courseId, taskId, selectedSolution.id, {
                 grade: gradeValue,
+                comment: gradeComment.trim() || undefined,
             });
 
             await loadSolutions();
             setShowGradeModal(false);
             setSelectedSolution(null);
+            setGradeComment('');
         } catch (err: any) {
             console.error('Failed to grade solution:', err);
             alert(err.message || 'Ошибка выставления оценки');
@@ -928,6 +1010,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             await loadSolutions();
             setShowGradeModal(false);
             setSelectedSolution(null);
+            setGradeComment('');
         } catch (err: any) {
             console.error('Failed to remove grade:', err);
             alert(err.message || 'Ошибка снятия оценки');
@@ -1069,6 +1152,9 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             gradeVoteError,
             gradeVoteSuccess,
             gradeVoteForm,
+            myTeamGrade,
+            myTeamGradeLoading,
+            myTeamGradeError,
             isCurrentUserCaptain: !!currentUser && normalizeCaptains(captains).some((captain) => captain.userId === currentUser.id),
             showSubmitForm,
             solutionText,
@@ -1078,6 +1164,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             showGradeModal,
             selectedSolution,
             gradeValue,
+            gradeComment,
             solutionComments,
             commentInputs,
             submittingCommentId,
@@ -1087,6 +1174,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setSolutionText,
             setSelectedFiles,
             setGradeValue,
+            setGradeComment,
             setShowGradeModal,
             handleSubmitSolution,
             handleOpenGradeModal,
@@ -1110,6 +1198,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             retryLoadCaptainFlow: loadCaptainFlowData,
             handleSendCaptainInvitation,
             retryLoadStudentInvitations: loadStudentInvitations,
+            retryLoadMyTeamGrade: loadMyTeamGrade,
             handleRespondToInvitation,
             retryLoadGradeVote: loadGradeVote,
             handleGradeVoteFieldChange,

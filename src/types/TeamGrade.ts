@@ -1,6 +1,6 @@
 import { UserDto } from "./User";
 
-export type TeamGradeDistributionMode = 'MANUAL' | 'AUTO_EQUAL';
+export type TeamGradeDistributionMode = 'MANUAL' | 'AUTO_EQUAL' | 'CAPTAIN_MANUAL' | 'TEAM_VOTE';
 
 export interface TeamGradeDto {
     id: string;
@@ -31,6 +31,21 @@ export interface TeamGradeDistributionDto {
     teamGrade: number;
     distributionMode: TeamGradeDistributionMode;
     students: StudentDistributedGradeDto[];
+}
+
+export interface MyTeamGradeStudentDistributedGradeDto {
+    student: UserDto;
+    grade: number | null;
+}
+
+export interface MyTeamGradeDto {
+    teamId: string;
+    teamName: string;
+    teamGrade: number | null;
+    distributionMode: TeamGradeDistributionMode;
+    myGrade: number | null;
+    finalized: boolean;
+    finalDistribution: MyTeamGradeStudentDistributedGradeDto[] | null;
 }
 
 export interface CaptainStudentGradeEntry {
