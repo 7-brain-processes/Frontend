@@ -5,7 +5,11 @@ import { PostDto, CourseRole, SolutionDto, PostType, SolutionStatus, CourseCateg
 import { categoryService, postsService, solutionsService, teamRequirementTemplateService } from '../../api/services';
 import { FormControl, MenuItem, Select } from "@mui/material";
 import { TeamRequirementTemplateDto } from '../../types/TeamRequirementTemplate';
-import { randomUUID } from 'crypto';
+
+const generateTemplateName = () => {
+  const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `Шаблон ${id}`;
+};
 
 interface AssignmentsTabProps {
   courseId: string;
@@ -40,7 +44,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     teamFormationMode: '' as TeamFormationModeValue
   });
   const [templateForm, setTemplateForm] = useState({
-    name: `Шаблон ${randomUUID()}`,
+    name: generateTemplateName(),
     minTeamSize: 0,
     maxTeamSize: 0,
     requiredCategoryId: ''
@@ -257,19 +261,25 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
         });
         setAssignments(assignments.map(a => (a.id === editingAssignment.id ? updatedPost : a)));
       } else {
-        const templateId = await createTeamRequirementTemplate();
-        if (!templateId) {
-          return false;
-        }
+        const selectedMode = assignmentForm.teamFormationMode || undefined;
+        const requiresTemplate = selectedMode === 'DRAFT' || selectedMode === 'CAPTAIN_SELECTION';
+
         const newPost = await postsService.createPost(courseId, {
           title: assignmentForm.title,
           content: assignmentForm.content || undefined,
           type: 'TASK',
           deadline: assignmentForm.deadline ? new Date(assignmentForm.deadline).toISOString() : undefined,
-          teamFormationMode: assignmentForm.teamFormationMode || undefined,
-          teamRequirementTemplateId: templateId
+          teamFormationMode: selectedMode,
         });
-        await applayTeamRequirementTemplate(templateId, newPost.id);
+
+        if (requiresTemplate) {
+          const templateId = await createTeamRequirementTemplate();
+          if (!templateId) {
+            return false;
+          }
+          await applayTeamRequirementTemplate(templateId, newPost.id);
+        }
+
         setAssignments([...assignments, newPost]);
       }
 

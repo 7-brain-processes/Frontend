@@ -1,6 +1,6 @@
 import { TeamGradeDto } from '../../types/TeamGrade';
-import { apiRequest } from '../client';
+import { apiRequestPreserveErrors } from '../client';
 
 export const getGrade = (courseId: string, postId: string, teamId: string): Promise<TeamGradeDto> => {
-    return apiRequest<TeamGradeDto>(`/courses/${courseId}/posts/${postId}/teams/${teamId}/grade`);
+    return apiRequestPreserveErrors<TeamGradeDto>(`/courses/${courseId}/posts/${postId}/teams/${teamId}/grade`);
 };

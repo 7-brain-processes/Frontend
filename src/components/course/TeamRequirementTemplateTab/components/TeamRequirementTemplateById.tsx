@@ -39,7 +39,7 @@ const TeamRequirementTemplateById = ({ setShowTemplate, template, showTemplate }
                                 <span>Размер команды: {template.minTeamSize} - {template.maxTeamSize}</span>
                             </div>
                             <div className="category-details">
-                                <span>Категория: {template.requiredCategory.title}</span>
+                                <span>Категория: {template.requiredCategory?.title ?? 'Без категории'}</span>
                             </div>
                             <div className="category-details">
                                 <span>Аудио: {template.requireAudio ? 'требуется' : 'не требуется'}</span>
@@ -47,7 +47,7 @@ const TeamRequirementTemplateById = ({ setShowTemplate, template, showTemplate }
                             <div className="category-details">
                                 <span>Видео: {template.requireVideo ? 'требуется' : 'не требуется'}</span>
                             </div>
-                            ы {!template.active && (
+                            {!template.active && (
                                 <div className="modal-body">
                                     <div className="category-status">Заархивирован</div>
                                     <div className="category-status">Дата архивирования: {formatDate(template.archivedAt)}</div>

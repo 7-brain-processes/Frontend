@@ -16,3 +16,4 @@ export * from './Category';
 export * from './Team';
 export * from './TeamFormation';
 export * from './TeamInvitation';
+export * from './TeamGrade';

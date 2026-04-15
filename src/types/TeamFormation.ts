@@ -19,9 +19,10 @@ export interface AutoTeamFormationTeamDto {
 }
 
 export interface AutoTeamFormationResultDto {
-  teamCount: number;
-  assignedStudentsCount: number;
-  unassignedStudentsCount: number;
+  formedTeams: number;
+  assignedStudents: number;
+  unassignedStudents: number;
+  generatedAt?: string;
   teams?: AutoTeamFormationTeamDto[];
 }
 
@@ -38,8 +39,14 @@ export interface SelectCaptainsRequest {
 }
 
 export interface CaptainDto {
+  id?: string;
   userId: string;
   username: string;
   displayName: string;
-  selectedAt?: string;
+}
+
+export interface SelectCaptainsResultDto {
+  selectedCaptains: number;
+  captains: CaptainDto[];
+  selectedAt: string;
 }

@@ -18,6 +18,10 @@ const isAuthEndpoint = (endpoint: string): boolean => {
   return endpoint.startsWith('/auth/');
 };
 
+const isAuthEndpointWithoutToken = (endpoint: string): boolean => {
+  return endpoint.startsWith('/auth/register') || endpoint.startsWith('/auth/login');
+};
+
 const shouldRedirectToLogin = (status: number, endpoint: string): boolean => {
   if (status !== 401 || isAuthEndpoint(endpoint)) {
     return false;
@@ -45,6 +49,24 @@ const redirectToNotFound = () => {
   window.location.replace(NOT_FOUND_ROUTE);
 };
 
+const parseJsonSafely = async <T>(response: Response): Promise<T | null> => {
+  const contentLength = response.headers.get('content-length');
+  if (contentLength === '0') {
+    return null;
+  }
+
+  const text = await response.text();
+  if (!text || !text.trim()) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+};
+
 export const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit = {}
@@ -65,12 +87,15 @@ const baseApiRequest = async <T>(
   redirectOnForbidden: boolean
 ): Promise<T> => {
   const token = getAuthToken();
+  const skipAuthHeader = isAuthEndpointWithoutToken(endpoint);
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
 
-  if (token) {
+  if (skipAuthHeader) {
+    delete headers['Authorization'];
+  } else if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
@@ -92,9 +117,10 @@ const baseApiRequest = async <T>(
       throw new Error('Access denied');
     }
 
-    const error = await response.json().catch(() => ({
+    const parsedError = await parseJsonSafely<{ message?: string }>(response);
+    const error = parsedError || {
       message: `HTTP error! status: ${response.status}`,
-    }));
+    };
     throw new Error(error.message || 'API request failed');
   }
 
@@ -102,7 +128,12 @@ const baseApiRequest = async <T>(
     return {} as T;
   }
 
-  return response.json();
+  const data = await parseJsonSafely<T>(response);
+  if (data === null) {
+    return {} as T;
+  }
+
+  return data;
 };
 
 export const uploadFile = async <T>(
@@ -133,13 +164,19 @@ export const uploadFile = async <T>(
       throw new Error('Access denied');
     }
 
-    const error = await response.json().catch(() => ({
+    const parsedError = await parseJsonSafely<{ message?: string }>(response);
+    const error = parsedError || {
       message: `HTTP error! status: ${response.status}`,
-    }));
+    };
     throw new Error(error.message || 'File upload failed');
   }
 
-  return response.json();
+  const data = await parseJsonSafely<T>(response);
+  if (data === null) {
+    return {} as T;
+  }
+
+  return data;
 };
 
 export const downloadFile = async (endpoint: string): Promise<Blob> => {

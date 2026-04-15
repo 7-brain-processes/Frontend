@@ -7,7 +7,11 @@ import './StreamTab.css';
 import PublicCommentsDialog from '../../pages/PublicComments/PublicCommentsDialog';
 import { usePublicCommentsDialog } from '../../pages/PublicComments/hooks/usePublicCommentsDialog';
 import { FormControl, MenuItem, Select } from '@mui/material';
-import { randomUUID } from 'crypto';
+
+const generateTemplateName = () => {
+  const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `Шаблон ${id}`;
+};
 
 interface StreamTabProps {
   courseId: string;
@@ -39,7 +43,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const [titleError, setTitleError] = useState('');
   const [deadlineError, setDeadlineError] = useState('');
   const [templateForm, setTemplateForm] = useState({
-    name: `Шаблон ${randomUUID()}`,
+    name: generateTemplateName(),
     minTeamSize: 0,
     maxTeamSize: 0,
     requiredCategoryId: ''
@@ -210,18 +214,24 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
         await loadPosts();
       } else {
         if (postForm.type === 'TASK') {
-          const templateId = await createTeamRequirementTemplate();
-          if (!templateId) {
-            return false;
-          }
+          const selectedMode = postForm.teamFormationMode || undefined;
+          const requiresTemplate = selectedMode === 'DRAFT' || selectedMode === 'CAPTAIN_SELECTION';
+
           const newPost = await postsService.createPost(courseId, {
             title: postForm.title,
             content: postForm.content || undefined,
             type: postForm.type,
             deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
-            teamFormationMode: postForm.teamFormationMode || undefined,
+            teamFormationMode: selectedMode,
           });
-          await applayTeamRequirementTemplate(templateId, newPost.id);
+
+          if (requiresTemplate) {
+            const templateId = await createTeamRequirementTemplate();
+            if (!templateId) {
+              return false;
+            }
+            await applayTeamRequirementTemplate(templateId, newPost.id);
+          }
 
           if (selectedFiles.length > 0) {
             for (const file of selectedFiles) {

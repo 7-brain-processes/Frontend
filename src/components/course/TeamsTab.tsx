@@ -11,10 +11,12 @@ import {
 import { useTeamGrade } from './TeamGrade/hooks/useTeamGrade';
 import GradeDialog from './TeamGrade/GradeDialog';
 import CaptainGradeDialog from './TeamGrade/CaptainGradeDialog';
+import { TeamGradeDistributionMode } from '../../types/TeamGrade';
 
 interface TeamsTabProps {
   courseId: string;
   userRole: CourseRole;
+  postId?: string;
 }
 
 const getHttpStatus = (err: any): number | null => {
@@ -59,14 +61,16 @@ const formatLimit = (maxSize: number | null) => {
   return maxSize === null ? 'без лимита' : `${maxSize}`;
 };
 
-const translateTeamGradeDistributionMode = {
-  'MANUAL': 'капитан распределяет',
-  'AUTO_EQUAL': 'автоматическое'
+const translateTeamGradeDistributionMode: Record<TeamGradeDistributionMode, string> = {
+  MANUAL: 'капитан распределяет',
+  AUTO_EQUAL: 'автоматическое',
+  CAPTAIN_MANUAL: 'капитан вручную',
+  TEAM_VOTE: 'голосование команды',
 };
 
-export default function TeamsTab({ courseId, userRole }: TeamsTabProps) {
+export default function TeamsTab({ courseId, userRole, postId }: TeamsTabProps) {
 
-  const { state, functions } = useTeamGrade();
+  const { state, functions } = useTeamGrade(courseId, postId);
 
   const [teams, setTeams] = useState<CourseTeamDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -328,6 +332,8 @@ export default function TeamsTab({ courseId, userRole }: TeamsTabProps) {
                         setShowTeamGradeModal={functions.setShowTeamGradeModal}
                         gradeValue={state.gradeValue}
                         setGradeValue={functions.setGradeValue}
+                        commentValue={state.gradeComment}
+                        setCommentValue={functions.setGradeComment}
                         handleTeamGradeSolution={functions.handleTeamGradeSolution}
                         distributionMode={state.distributionMode}
                         setDistributionMode={functions.setDistributionMode}
@@ -369,7 +375,7 @@ export default function TeamsTab({ courseId, userRole }: TeamsTabProps) {
                         return (
                           <div key={member.user.id} className="team-member-item">
                             <span className="team-member-name">{member.user.displayName}</span>
-                            {state.distribution?.distributionMode === 'MANUAL' && isCaptain && (
+                            {state.distribution?.distributionMode === 'CAPTAIN_MANUAL' && isCaptain && (
                               <div>
                                 <button
                                   className="submit-button"

@@ -8,7 +8,10 @@ export const loadTeamRequirementTemplatesFunc = async (courseId: string | undefi
 
     try {
         const templates = await teamRequirementTemplateService.listTemplates(courseId);
-        setTemplates(templates);
+        const safeTemplates = (Array.isArray(templates) ? templates : []).filter(
+            (template): template is TeamRequirementTemplateDto => Boolean(template && template.id)
+        );
+        setTemplates(safeTemplates);
     } catch (err: any) {
         console.error('Failed to load course:', err);
         setTemplates([]);

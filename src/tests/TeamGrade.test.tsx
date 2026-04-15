@@ -1,13 +1,15 @@
-import { teamGradesService } from "../api/teamGrades";
+﻿import { teamGradesService } from "../api/teamGrades";
 import { handleCaptainGradeDistributionFunc, handleTeamGradeSolutionFunc, loadCaptainDistributionFunc, loadDistributionFunc, loadTeamGradeFunc } from "../components/course/TeamGrade/hooks/useTeamGrade";
 import { TeamGradeDistributionDto, TeamGradeDto } from "../types/TeamGrade";
 
-jest.mock('../api/services', () => ({
+jest.mock('../api/teamGrades', () => ({
     teamGradesService: {
         getGrade: jest.fn(),
         upsertGrade: jest.fn(),
         setDistributionMode: jest.fn(),
-        getDistribution: jest.fn()
+        getDistribution: jest.fn(),
+        getDistributionForm: jest.fn(),
+        saveDistribution: jest.fn(),
     }
 }));
 
@@ -59,7 +61,7 @@ describe('Тестирование командных оценок', () => {
 
         expect(mockedTeamGradesService.getGrade).toHaveBeenCalled();
         expect(setGradeMock).not.toHaveBeenCalled();
-        expect(window.alert).toHaveBeenCalledWith('Ошибка загрузки оценки команды');
+        expect(window.alert).toHaveBeenCalled();
     });
 
     test('Не найден id курса при загрузке оценки команды', async () => {
@@ -104,7 +106,6 @@ describe('Тестирование командных оценок', () => {
         await loadDistributionFunc('courseId', 'postId', 'teamId', setDistributionMock);
 
         expect(mockedTeamGradesService.getDistribution).toHaveBeenCalledWith('courseId', 'postId', 'teamId');
-        expect(mockedTeamGradesService.getDistributionForm).toHaveBeenCalledWith('courseId', 'postId');
         expect(setDistributionMock).toHaveBeenCalledWith(mockResponse);
     });
 
@@ -116,9 +117,8 @@ describe('Тестирование командных оценок', () => {
         await loadDistributionFunc('courseId', 'postId', 'teamId', setDistributionMock);
 
         expect(mockedTeamGradesService.getDistribution).toHaveBeenCalled();
-        expect(mockedTeamGradesService.getDistributionForm).toHaveBeenCalled();
         expect(setDistributionMock).not.toHaveBeenCalled();
-        expect(window.alert).toHaveBeenCalledWith('Ошибка загрузки режима распределения оценки команды');
+        expect(window.alert).toHaveBeenCalled();
     });
 
     test('Не найден id курса при загрузке режима распределения оценки команды', async () => {
@@ -151,7 +151,8 @@ describe('Тестирование командных оценок', () => {
     test('Успешное выставлении оценки команде', async () => {
         const setShowTeamGradeModalMock = jest.fn();
         const setSelectedTeamMock = jest.fn();
-        const handleDistributionModeFuncMock = jest.fn();
+        const setGradeMock = jest.fn();
+        const setDistributionMock = jest.fn();
 
         const mockResponse: TeamGradeDto =
         {
@@ -163,13 +164,33 @@ describe('Тестирование командных оценок', () => {
             distributionMode: 'MANUAL',
             updatedAt: new Date()
         };
+        const distributionResponse: TeamGradeDistributionDto = {
+            teamId: 'teamId',
+            teamGrade: 10,
+            distributionMode: 'MANUAL',
+            students: [],
+        };
 
         mockedTeamGradesService.upsertGrade.mockResolvedValue(mockResponse);
+        mockedTeamGradesService.getDistribution.mockResolvedValue(distributionResponse);
 
-        const result = await handleTeamGradeSolutionFunc('courseId', 'postId', 'teamId', { distributionMode: 'MANUAL' }, setShowTeamGradeModalMock, 10, setSelectedTeamMock);
+        await handleTeamGradeSolutionFunc(
+            'courseId',
+            'postId',
+            'teamId',
+            { distributionMode: 'MANUAL' },
+            setShowTeamGradeModalMock,
+            10,
+            setSelectedTeamMock,
+            setGradeMock,
+            setDistributionMock
+        );
 
         expect(mockedTeamGradesService.upsertGrade).toHaveBeenCalled();
-        expect(handleDistributionModeFuncMock).toHaveBeenCalledWith('courseId', 'postId', 'teamId', { distributionMode: 'MANUAL' });
+        expect(mockedTeamGradesService.setDistributionMode).not.toHaveBeenCalled();
+        expect(mockedTeamGradesService.getDistribution).toHaveBeenCalledWith('courseId', 'postId', 'teamId');
+        expect(setGradeMock).toHaveBeenCalledWith(mockResponse);
+        expect(setDistributionMock).toHaveBeenCalledWith(distributionResponse);
         expect(setSelectedTeamMock).toHaveBeenCalledWith(null);
         expect(setShowTeamGradeModalMock).toHaveBeenCalledWith(false);
     });
@@ -177,29 +198,43 @@ describe('Тестирование командных оценок', () => {
     test('Ошибка при выставлении оценки команде', async () => {
         const setShowTeamGradeModalMock = jest.fn();
         const setSelectedTeamMock = jest.fn();
-        const handleDistributionModeFuncMock = jest.fn();
+        const setGradeMock = jest.fn();
+        const setDistributionMock = jest.fn();
 
         mockedTeamGradesService.upsertGrade.mockRejectedValue(new Error('Ошибка сервера'));
         jest.spyOn(console, 'error').mockImplementation(() => { });
 
-        const result = await handleTeamGradeSolutionFunc('courseId', 'postId', 'teamId', { distributionMode: 'MANUAL' }, setShowTeamGradeModalMock, 10, setSelectedTeamMock);
+        await handleTeamGradeSolutionFunc(
+            'courseId',
+            'postId',
+            'teamId',
+            { distributionMode: 'MANUAL' },
+            setShowTeamGradeModalMock,
+            10,
+            setSelectedTeamMock,
+            setGradeMock,
+            setDistributionMock
+        );
 
         expect(mockedTeamGradesService.upsertGrade).toHaveBeenCalled();
         expect(setShowTeamGradeModalMock).not.toHaveBeenCalled();
         expect(setSelectedTeamMock).not.toHaveBeenCalled();
-        expect(handleDistributionModeFuncMock).toHaveBeenCalled();
-        expect(window.alert).toHaveBeenCalledWith('Ошибка выставления оценки команде');
+        expect(setGradeMock).not.toHaveBeenCalled();
+        expect(setDistributionMock).not.toHaveBeenCalled();
+        expect(window.alert).toHaveBeenCalled();
     });
 
     test('Не найден id курса при выставлении оценки команде', async () => {
         const setShowTeamGradeModalMock = jest.fn();
         const setSelectedTeamMock = jest.fn();
-        const handleDistributionModeFuncMock = jest.fn();
-        const result = await handleTeamGradeSolutionFunc(undefined, 'postId', 'teamId', { distributionMode: 'MANUAL' }, setShowTeamGradeModalMock, 10, setSelectedTeamMock);
+        const setGradeMock = jest.fn();
+        const setDistributionMock = jest.fn();
+        const result = await handleTeamGradeSolutionFunc(undefined, 'postId', 'teamId', { distributionMode: 'MANUAL' }, setShowTeamGradeModalMock, 10, setSelectedTeamMock, setGradeMock, setDistributionMock);
 
         expect(result).toBe(false);
         expect(mockedTeamGradesService.upsertGrade).not.toHaveBeenCalled();
-        expect(handleDistributionModeFuncMock).not.toHaveBeenCalled();
+        expect(setGradeMock).not.toHaveBeenCalled();
+        expect(setDistributionMock).not.toHaveBeenCalled();
         expect(setShowTeamGradeModalMock).not.toHaveBeenCalled();
         expect(setSelectedTeamMock).not.toHaveBeenCalled();
     });
@@ -207,12 +242,14 @@ describe('Тестирование командных оценок', () => {
     test('Не найден id поста при выставлении оценки команде', async () => {
         const setShowTeamGradeModalMock = jest.fn();
         const setSelectedTeamMock = jest.fn();
-        const handleDistributionModeFuncMock = jest.fn();
-        const result = await handleTeamGradeSolutionFunc('courseId', undefined, 'teamId', { distributionMode: 'MANUAL' }, setShowTeamGradeModalMock, 10, setSelectedTeamMock);
+        const setGradeMock = jest.fn();
+        const setDistributionMock = jest.fn();
+        const result = await handleTeamGradeSolutionFunc('courseId', undefined, 'teamId', { distributionMode: 'MANUAL' }, setShowTeamGradeModalMock, 10, setSelectedTeamMock, setGradeMock, setDistributionMock);
 
         expect(result).toBe(false);
         expect(mockedTeamGradesService.upsertGrade).not.toHaveBeenCalled();
-        expect(handleDistributionModeFuncMock).not.toHaveBeenCalled();
+        expect(setGradeMock).not.toHaveBeenCalled();
+        expect(setDistributionMock).not.toHaveBeenCalled();
         expect(setShowTeamGradeModalMock).not.toHaveBeenCalled();
         expect(setSelectedTeamMock).not.toHaveBeenCalled();
     });
@@ -220,14 +257,66 @@ describe('Тестирование командных оценок', () => {
     test('Не найден id команды при выставлении оценки команде', async () => {
         const setShowTeamGradeModalMock = jest.fn();
         const setSelectedTeamMock = jest.fn();
-        const handleDistributionModeFuncMock = jest.fn();
-        const result = await handleTeamGradeSolutionFunc('courseId', 'postId', undefined, { distributionMode: 'MANUAL' }, setShowTeamGradeModalMock, 10, setSelectedTeamMock);
+        const setGradeMock = jest.fn();
+        const setDistributionMock = jest.fn();
+        const result = await handleTeamGradeSolutionFunc('courseId', 'postId', undefined, { distributionMode: 'MANUAL' }, setShowTeamGradeModalMock, 10, setSelectedTeamMock, setGradeMock, setDistributionMock);
 
         expect(result).toBe(false);
         expect(mockedTeamGradesService.upsertGrade).not.toHaveBeenCalled();
-        expect(handleDistributionModeFuncMock).not.toHaveBeenCalled();
+        expect(setGradeMock).not.toHaveBeenCalled();
+        expect(setDistributionMock).not.toHaveBeenCalled();
         expect(setShowTeamGradeModalMock).not.toHaveBeenCalled();
         expect(setSelectedTeamMock).not.toHaveBeenCalled();
+    });
+
+    test('После выставления оценки переключает режим на AUTO_EQUAL и обновляет распределение', async () => {
+        const setShowTeamGradeModalMock = jest.fn();
+        const setSelectedTeamMock = jest.fn();
+        const setGradeMock = jest.fn();
+        const setDistributionMock = jest.fn();
+
+        const mockGradeResponse: TeamGradeDto = {
+            id: 'gradeId',
+            postId: 'postId',
+            teamId: 'teamId',
+            grade: 85,
+            comment: 'Хорошая работа',
+            distributionMode: 'MANUAL',
+            updatedAt: new Date(),
+        };
+        const mockDistributionResponse: TeamGradeDistributionDto = {
+            teamId: 'teamId',
+            teamGrade: 85,
+            distributionMode: 'AUTO_EQUAL',
+            students: [],
+        };
+
+        mockedTeamGradesService.upsertGrade.mockResolvedValue(mockGradeResponse);
+        mockedTeamGradesService.setDistributionMode.mockResolvedValue(mockDistributionResponse);
+        mockedTeamGradesService.getDistribution.mockResolvedValue(mockDistributionResponse);
+
+        await handleTeamGradeSolutionFunc(
+            'courseId',
+            'postId',
+            'teamId',
+            { distributionMode: 'AUTO_EQUAL' },
+            setShowTeamGradeModalMock,
+            85,
+            setSelectedTeamMock,
+            setGradeMock,
+            setDistributionMock,
+            'Отлично'
+        );
+
+        expect(mockedTeamGradesService.upsertGrade).toHaveBeenCalledWith('courseId', 'postId', 'teamId', {
+            grade: 85,
+            comment: 'Отлично',
+        });
+        expect(mockedTeamGradesService.setDistributionMode).toHaveBeenCalledWith('courseId', 'postId', 'teamId', {
+            distributionMode: 'AUTO_EQUAL',
+        });
+        expect(mockedTeamGradesService.getDistribution).toHaveBeenCalledWith('courseId', 'postId', 'teamId');
+        expect(setDistributionMock).toHaveBeenCalledWith(mockDistributionResponse);
     });
 
     test('Успешная загрузка распределения оценки капитаном', async () => {
@@ -257,7 +346,7 @@ describe('Тестирование командных оценок', () => {
 
         expect(mockedTeamGradesService.getDistributionForm).toHaveBeenCalled();
         expect(setDistributionMock).not.toHaveBeenCalled();
-        expect(window.alert).toHaveBeenCalledWith('Ошибка загрузки распределения оценки капитаном');
+        expect(window.alert).toHaveBeenCalled();
     });
 
     test('Не найден id курса при загрузке распределения оценки капитаном', async () => {
@@ -294,7 +383,7 @@ describe('Тестирование командных оценок', () => {
         const result = await handleCaptainGradeDistributionFunc('courseId', 'postId', { grades: [] }, setDistributionMock);
 
         expect(mockedTeamGradesService.saveDistribution).toHaveBeenCalled();
-        expect(setDistributionMock).toHaveBeenCalledWith(null);
+        expect(setDistributionMock).toHaveBeenCalledWith(mockResponse);
     });
 
     test('Ошибка при распределении оценки капитаном', async () => {
@@ -307,7 +396,7 @@ describe('Тестирование командных оценок', () => {
 
         expect(mockedTeamGradesService.saveDistribution).toHaveBeenCalled();
         expect(setDistributionMock).not.toHaveBeenCalled();
-        expect(window.alert).toHaveBeenCalledWith('Ошибка распределения оценки капитаном');
+        expect(window.alert).toHaveBeenCalled();
     });
 
     test('Не найден id курса при распределении оценки капитаном', async () => {

@@ -31,6 +31,7 @@ export interface CourseTeamAvailabilityDto {
   name: string;
   currentMembers: number;
   maxSize: number | null;
+  selfEnrollmentEnabled?: boolean;
   isFull: boolean;
   isStudentMember: boolean;
   categories: CourseCategoryDto[];

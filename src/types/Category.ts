@@ -13,7 +13,7 @@ export interface CreateCourseCategory {
 }
 
 export interface SetMyCategoryRequest {
-    categotyId: string | null;
+    categoryId: string | null;
 }
 
 export interface UpdateCourseCategoryRequest {

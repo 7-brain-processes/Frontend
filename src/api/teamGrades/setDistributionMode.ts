@@ -1,4 +1,4 @@
-import { apiRequest } from '../client';
+import { apiRequestPreserveErrors } from '../client';
 import { SetTeamGradeDistributionModeRequest, TeamGradeDistributionDto } from '../../types/TeamGrade';
 
 export const setDistributionMode = (
@@ -7,7 +7,7 @@ export const setDistributionMode = (
     teamId: string,
     data: SetTeamGradeDistributionModeRequest
 ): Promise<TeamGradeDistributionDto> => {
-    return apiRequest<TeamGradeDistributionDto>(`/courses/${courseId}/posts/${postId}/teams/${teamId}/grade/distribution`, {
+    return apiRequestPreserveErrors<TeamGradeDistributionDto>(`/courses/${courseId}/posts/${postId}/teams/${teamId}/grade/distribution`, {
         method: 'PUT',
         body: JSON.stringify(data),
     });
