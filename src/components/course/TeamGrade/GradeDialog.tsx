@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { FormControl, MenuItem, Select } from "@mui/material";
-import { CourseTeamDto } from "../../../types";
+import { CourseTeamDto, PostDto } from "../../../types";
 import { SetTeamGradeDistributionModeRequest, TeamGradeDistributionMode } from "../../../types/TeamGrade";
 import '../AssignmentsTab.css';
 
@@ -15,9 +16,57 @@ interface GradeDialogProps {
     distributionMode: SetTeamGradeDistributionModeRequest;
     setDistributionMode: (distributionMode: SetTeamGradeDistributionModeRequest) => void;
     team: CourseTeamDto;
+    teamFormationMode?: PostDto['teamFormationMode'];
 }
 
-const GradeDialog: React.FC<GradeDialogProps> = ({ showTeamGradeModal, selectedTeam, setShowTeamGradeModal, gradeValue, setGradeValue, commentValue = '', setCommentValue, handleTeamGradeSolution, distributionMode, setDistributionMode, team }) => {
+const getAllowedDistributionModes = (teamFormationMode?: PostDto['teamFormationMode']): TeamGradeDistributionMode[] => {
+    if (teamFormationMode === 'FREE' || teamFormationMode === 'RANDOM_SHUFFLE') {
+        return ['AUTO_EQUAL', 'TEAM_VOTE'];
+    }
+
+    if (teamFormationMode === 'CAPTAIN_SELECTION' || teamFormationMode === 'DRAFT') {
+        return ['AUTO_EQUAL', 'CAPTAIN_MANUAL', 'TEAM_VOTE'];
+    }
+
+    return ['MANUAL', 'AUTO_EQUAL', 'CAPTAIN_MANUAL', 'TEAM_VOTE'];
+};
+
+const distributionModeLabels: Record<TeamGradeDistributionMode, string> = {
+    MANUAL: 'Ручное распределение',
+    AUTO_EQUAL: 'Автоматически',
+    CAPTAIN_MANUAL: 'Капитан вручную',
+    TEAM_VOTE: 'Голосование команды',
+};
+
+const GradeDialog: React.FC<GradeDialogProps> = ({
+    showTeamGradeModal,
+    selectedTeam,
+    setShowTeamGradeModal,
+    gradeValue,
+    setGradeValue,
+    commentValue = '',
+    setCommentValue,
+    handleTeamGradeSolution,
+    distributionMode,
+    setDistributionMode,
+    team,
+    teamFormationMode,
+}) => {
+    const allowedDistributionModes = getAllowedDistributionModes(teamFormationMode);
+    const effectiveDistributionMode = allowedDistributionModes.includes(distributionMode.distributionMode)
+        ? distributionMode.distributionMode
+        : allowedDistributionModes[0];
+
+    useEffect(() => {
+        if (!showTeamGradeModal) {
+            return;
+        }
+
+        if (distributionMode.distributionMode !== effectiveDistributionMode) {
+            setDistributionMode({ distributionMode: effectiveDistributionMode });
+        }
+    }, [showTeamGradeModal, distributionMode, effectiveDistributionMode, setDistributionMode]);
+
     return (
         <div>
             {showTeamGradeModal && selectedTeam && (
@@ -67,15 +116,16 @@ const GradeDialog: React.FC<GradeDialogProps> = ({ showTeamGradeModal, selectedT
                                 <FormControl fullWidth>
                                     <Select
                                         id="demo-simple-select"
-                                        value={distributionMode.distributionMode}
-                                        onChange={(e => setDistributionMode({
+                                        value={effectiveDistributionMode}
+                                        onChange={(e) => setDistributionMode({
                                             distributionMode: e.target.value as TeamGradeDistributionMode
-                                        }))}
+                                        })}
                                     >
-                                        <MenuItem value={'MANUAL'}>Капитан распределяет</MenuItem>
-                                        <MenuItem value={'AUTO_EQUAL'}>Автоматически</MenuItem>
-                                        <MenuItem value={'CAPTAIN_MANUAL'}>Капитан вручную</MenuItem>
-                                        <MenuItem value={'TEAM_VOTE'}>Голосование команды</MenuItem>
+                                        {allowedDistributionModes.map((mode) => (
+                                            <MenuItem key={mode} value={mode}>
+                                                {distributionModeLabels[mode]}
+                                            </MenuItem>
+                                        ))}
                                     </Select>
                                 </FormControl>
                             </div>

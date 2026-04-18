@@ -113,12 +113,12 @@ describe('Тестирование категорий', () => {
   test('Успешное удаление моей категории', async () => {
     const setMyCategoryMock = jest.fn();
 
-    mockedCategoryService.setMyCategory.mockResolvedValue(null as any);
+    mockedCategoryService.setMyCategory.mockResolvedValue(undefined as any);
 
     await deleteMyCategoryFunc('courseId', setMyCategoryMock);
 
     expect(mockedCategoryService.setMyCategory).toHaveBeenCalledWith('courseId', { categoryId: null });
-    expect(setMyCategoryMock).toHaveBeenCalled();
+    expect(setMyCategoryMock).toHaveBeenCalledWith(null);
   });
 
   test('Ошибка при удалении моей категории', async () => {
@@ -238,13 +238,20 @@ describe('Тестирование категорий', () => {
 
   test('Успешный выбор моей категории', async () => {
     const setMyCategoryMock = jest.fn();
+    const selectedCategory = {
+      id: 'categoryId',
+      title: 'title',
+      description: 'description',
+      active: true,
+      createdAt: new Date()
+    };
 
-    mockedCategoryService.setMyCategory.mockResolvedValue(null as any);
+    mockedCategoryService.setMyCategory.mockResolvedValue(undefined as any);
 
-    await chooseMyCategoryFunc('courseId', 'categoryId', setMyCategoryMock);
+    await chooseMyCategoryFunc('courseId', 'categoryId', setMyCategoryMock, [selectedCategory]);
 
     expect(mockedCategoryService.setMyCategory).toHaveBeenCalledWith('courseId', { categoryId: 'categoryId' });
-    expect(setMyCategoryMock).toHaveBeenCalled();
+    expect(setMyCategoryMock).toHaveBeenCalledWith(selectedCategory);
   });
 
   test('Ошибка при выборе моей категории', async () => {

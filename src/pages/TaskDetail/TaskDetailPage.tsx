@@ -1755,6 +1755,7 @@ const TaskDetailPage = () => {
         distributionMode={teamGrade.state.distributionMode}
         setDistributionMode={teamGrade.functions.setDistributionMode}
         team={teamGrade.state.selectedTeam || ({ id: '', name: 'Команда', createdAt: '', membersCount: 0, members: [], maxSize: null, selfEnrollmentEnabled: false, isFull: false, categories: [], categoryId: null, categoryTitle: null } as CourseTeamDto)}
+        teamFormationMode={state.task.teamFormationMode}
       />
 
       <CaptainGradeDialog

@@ -83,21 +83,28 @@ export const deleteMyCategoryFunc = async (courseId: string | undefined, setMyCa
     if (!courseId) return false;
 
     try {
-        const category = await categoryService.setMyCategory(courseId, { categoryId: null });
-        setMyCategory(category);
+        await categoryService.setMyCategory(courseId, { categoryId: null });
+        setMyCategory(null);
     } catch (err: any) {
         console.error('Failed to load course:', err);
         alert(err.message || 'Ошибка удаления категории');
     }
 };
 
-export const chooseMyCategoryFunc = async (courseId: string | undefined, categoryId: string | undefined, setMyCategory: React.Dispatch<React.SetStateAction<CourseCategoryDto | null>>) => {
+export const chooseMyCategoryFunc = async (
+    courseId: string | undefined,
+    categoryId: string | undefined,
+    setMyCategory: React.Dispatch<React.SetStateAction<CourseCategoryDto | null>>,
+    categories: CourseCategoryDto[] = []
+) => {
     if (!courseId) return false;
     if (!categoryId) return false;
 
     try {
-        const category = await categoryService.setMyCategory(courseId, { categoryId });
-        setMyCategory(category);
+        await categoryService.setMyCategory(courseId, { categoryId });
+        const selectedCategory = categories.find((category) => category.id === categoryId)
+            || await categoryService.getMyCategory(courseId).catch(() => null);
+        setMyCategory(selectedCategory);
     } catch (err: any) {
         console.error('Failed to load course:', err);
         alert(err.message || 'Ошибка выбора категории');
@@ -163,7 +170,7 @@ export const useCategoryTab = (courseId: string, userRole: CourseRole) => {
     };
 
     const chooseMyCategory = (categoryId: string) => {
-        chooseMyCategoryFunc(courseId, categoryId, setMyCategory)
+        chooseMyCategoryFunc(courseId, categoryId, setMyCategory, categories)
     };
 
     useEffect(() => {

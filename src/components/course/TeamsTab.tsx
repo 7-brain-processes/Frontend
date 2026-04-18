@@ -62,7 +62,7 @@ const formatLimit = (maxSize: number | null) => {
 };
 
 const translateTeamGradeDistributionMode: Record<TeamGradeDistributionMode, string> = {
-  MANUAL: 'капитан распределяет',
+  MANUAL: 'ручное',
   AUTO_EQUAL: 'автоматическое',
   CAPTAIN_MANUAL: 'капитан вручную',
   TEAM_VOTE: 'голосование команды',
