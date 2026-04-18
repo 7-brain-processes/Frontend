@@ -111,7 +111,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       setMySolution(solution);
       setSolutionText(solution.text || '');
     } catch (err: any) {
-      if (err.message?.includes('404') || err.message?.includes('not found')) {
+      if (err.message?.includes('404') || err.message?.includes('not found') || err.message?.includes('Не найдено')) {
         setMySolution(null);
         setSolutionText('');
       } else {

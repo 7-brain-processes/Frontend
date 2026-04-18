@@ -1,3 +1,5 @@
+import { translateApiMessage } from '../utils/translateApiMessage';
+
 const API_BASE_URL = '/api/v1';
 const NOT_FOUND_ROUTE = '/404';
 const LOGIN_ROUTE = '/login';
@@ -109,19 +111,19 @@ const baseApiRequest = async <T>(
   if (!response.ok) {
     if (shouldRedirectToLogin(response.status, endpoint)) {
       redirectToLogin();
-      throw new Error('Unauthorized');
+      throw new Error(translateApiMessage('Unauthorized'));
     }
 
     if (redirectOnForbidden && shouldRedirectToNotFound(response.status, endpoint)) {
       redirectToNotFound();
-      throw new Error('Access denied');
+      throw new Error(translateApiMessage('Access denied'));
     }
 
     const parsedError = await parseJsonSafely<{ message?: string }>(response);
     const error = parsedError || {
       message: `HTTP error! status: ${response.status}`,
     };
-    throw new Error(error.message || 'API request failed');
+    throw new Error(translateApiMessage(error.message, 'Ошибка запроса к серверу'));
   }
 
   if (response.status === 204) {
@@ -156,19 +158,19 @@ export const uploadFile = async <T>(
   if (!response.ok) {
     if (shouldRedirectToLogin(response.status, endpoint)) {
       redirectToLogin();
-      throw new Error('Unauthorized');
+      throw new Error(translateApiMessage('Unauthorized'));
     }
 
     if (shouldRedirectToNotFound(response.status, endpoint)) {
       redirectToNotFound();
-      throw new Error('Access denied');
+      throw new Error(translateApiMessage('Access denied'));
     }
 
     const parsedError = await parseJsonSafely<{ message?: string }>(response);
     const error = parsedError || {
       message: `HTTP error! status: ${response.status}`,
     };
-    throw new Error(error.message || 'File upload failed');
+    throw new Error(translateApiMessage(error.message, 'Ошибка загрузки файла'));
   }
 
   const data = await parseJsonSafely<T>(response);
@@ -195,15 +197,15 @@ export const downloadFile = async (endpoint: string): Promise<Blob> => {
   if (!response.ok) {
     if (shouldRedirectToLogin(response.status, endpoint)) {
       redirectToLogin();
-      throw new Error('Unauthorized');
+      throw new Error(translateApiMessage('Unauthorized'));
     }
 
     if (shouldRedirectToNotFound(response.status, endpoint)) {
       redirectToNotFound();
-      throw new Error('Access denied');
+      throw new Error(translateApiMessage('Access denied'));
     }
 
-    throw new Error('File download failed');
+    throw new Error(translateApiMessage('File download failed'));
   }
 
   return response.blob();

@@ -305,39 +305,44 @@ export default function TeamsTab({ courseId, userRole, postId }: TeamsTabProps) 
                   <div>
                     <h3>{team.name}</h3>
                     <div className="course-team-meta">
-                      {state.grade && state.distribution ? (
-                        <div>
-                          <span>Оценка команды: {state.grade.grade}</span>
-                          <button
-                            className="submit-button"
-                            onClick={() => functions.handleOpenGradeModal(team)}
-                          >
-                            Изменить
-                          </button>
-                          <span>Режим распределения оценки: {translateTeamGradeDistributionMode[state.distribution.distributionMode]}</span>
-                        </div>
-                      ) : (
-                        <div>
-                          <button
-                            className="submit-button"
-                            onClick={() => functions.handleOpenGradeModal(team)}
-                          >
-                            Оценить
-                          </button>
-                        </div>
+                      {postId && (
+                        <>
+                          {state.grade && state.distribution ? (
+                            <div>
+                              <span>Оценка команды: {state.grade.grade}</span>
+                              <button
+                                className="submit-button"
+                                onClick={() => functions.handleOpenGradeModal(team)}
+                              >
+                                Изменить
+                              </button>
+                              <span>Режим распределения оценки: {translateTeamGradeDistributionMode[state.distribution.distributionMode]}</span>
+                            </div>
+                          ) : (
+                            <div>
+                              <button
+                                className="submit-button"
+                                onClick={() => functions.handleOpenGradeModal(team)}
+                              >
+                                Оценить
+                              </button>
+                            </div>
+                          )}
+                          <GradeDialog
+                            showTeamGradeModal={state.showTeamGradeModal}
+                            selectedTeam={state.selectedTeam}
+                            setShowTeamGradeModal={functions.setShowTeamGradeModal}
+                            gradeValue={state.gradeValue}
+                            setGradeValue={functions.setGradeValue}
+                            commentValue={state.gradeComment}
+                            setCommentValue={functions.setGradeComment}
+                            handleTeamGradeSolution={functions.handleTeamGradeSolution}
+                            distributionMode={state.distributionMode}
+                            setDistributionMode={functions.setDistributionMode}
+                            team={team}
+                          />
+                        </>
                       )}
-                      <GradeDialog
-                        showTeamGradeModal={state.showTeamGradeModal}
-                        selectedTeam={state.selectedTeam}
-                        setShowTeamGradeModal={functions.setShowTeamGradeModal}
-                        gradeValue={state.gradeValue}
-                        setGradeValue={functions.setGradeValue}
-                        commentValue={state.gradeComment}
-                        setCommentValue={functions.setGradeComment}
-                        handleTeamGradeSolution={functions.handleTeamGradeSolution}
-                        distributionMode={state.distributionMode}
-                        setDistributionMode={functions.setDistributionMode}
-                        team={team} />
                       <span>Участников: {team.membersCount}</span>
                       <span>Лимит: {formatLimit(team.maxSize)}</span>
                     </div>
@@ -375,7 +380,7 @@ export default function TeamsTab({ courseId, userRole, postId }: TeamsTabProps) 
                         return (
                           <div key={member.user.id} className="team-member-item">
                             <span className="team-member-name">{member.user.displayName}</span>
-                            {state.distribution?.distributionMode === 'CAPTAIN_MANUAL' && isCaptain && (
+                            {postId && state.distribution?.distributionMode === 'CAPTAIN_MANUAL' && isCaptain && (
                               <div>
                                 <button
                                   className="submit-button"
@@ -385,15 +390,17 @@ export default function TeamsTab({ courseId, userRole, postId }: TeamsTabProps) 
                                 </button>
                               </div>
                             )}
-                            <CaptainGradeDialog
-                              showCaptainGradeModal={state.showCaptainGradeModal}
-                              setShowCaptainGradeModal={functions.setShowCaptainGradeModal}
-                              handleCaptainGradeDistribution={functions.handleCaptainGradeDistribution}
-                              members={members}
-                              setCaptainDistribution={functions.setCaptainDistribution}
-                              captainDistribution={state.captainDistribution}
-                              handleGradeChange={functions.handleGradeChange}
-                            />
+                            {postId && (
+                              <CaptainGradeDialog
+                                showCaptainGradeModal={state.showCaptainGradeModal}
+                                setShowCaptainGradeModal={functions.setShowCaptainGradeModal}
+                                handleCaptainGradeDistribution={functions.handleCaptainGradeDistribution}
+                                members={members}
+                                setCaptainDistribution={functions.setCaptainDistribution}
+                                captainDistribution={state.captainDistribution}
+                                handleGradeChange={functions.handleGradeChange}
+                              />
+                            )}
                             {studentGrade && (
                               <span className="team-member-name">Оценка: {studentGrade.grade}</span>
                             )}

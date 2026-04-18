@@ -66,6 +66,7 @@ export const handleCaptainGradeDistributionFunc = async (courseId: string | unde
     try {
         const distribution = await teamGradesService.saveDistribution(courseId, postId, captainDistribution);
         setDistribution(distribution);
+        window.location.reload();
 
     } catch (err: any) {
         console.error('Failed to grade solution:', err);
@@ -141,6 +142,7 @@ export const handleTeamGradeSolutionFunc = async (
 
         setShowTeamGradeModal(false);
         setSelectedTeam(null);
+        window.location.reload();
     } catch (err: any) {
         console.error('Failed to grade solution:', err);
         alert(err.message || 'Ошибка выставления оценки команде');

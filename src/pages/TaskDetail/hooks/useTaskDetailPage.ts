@@ -22,6 +22,7 @@ import {
     UserDto,
     CaptainStudentGradeEntry,
 } from "../../../types/api";
+import { translateApiMessage } from "../../../utils/translateApiMessage";
 
 type TeamsErrorCode = '403' | '404' | 'generic' | null;
 
@@ -33,7 +34,7 @@ const getHttpStatus = (err: any): number | null => {
 
 const isNoCurrentTeamError = (err: any): boolean => {
     const message = String(err?.message || '').toLowerCase();
-    return message.includes('not in any team');
+    return message.includes('not in any team') || message.includes('не состоит ни в одной команде');
 };
 
 const isCaptainSelectionMode = (mode: PostDto['teamFormationMode'] | undefined | null): boolean => {
@@ -374,7 +375,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         } catch (err: any) {
             console.error('Failed to load my team grade:', err);
             setMyTeamGrade(null);
-            setMyTeamGradeError(err.message || 'Не удалось загрузить оценку команды');
+            setMyTeamGradeError(translateApiMessage(err.message, 'Не удалось загрузить оценку команды'));
             return null;
         } finally {
             setMyTeamGradeLoading(false);
@@ -414,7 +415,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             console.error('Failed to load grade vote:', err);
             setGradeVoteStatus(null);
             setGradeVoteForm([]);
-            setGradeVoteError(err.message || 'Не удалось загрузить голосование');
+            setGradeVoteError(translateApiMessage(err.message, 'Не удалось загрузить голосование'));
         } finally {
             setGradeVoteLoading(false);
         }
@@ -457,7 +458,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setGradeVoteSuccess('Голос успешно отправлен');
         } catch (err: any) {
             console.error('Failed to submit grade vote:', err);
-            setGradeVoteError(err.message || 'Не удалось отправить голос');
+            setGradeVoteError(translateApiMessage(err.message, 'Не удалось отправить голос'));
         } finally {
             setGradeVoteSubmitting(false);
         }
@@ -569,7 +570,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             }
         } catch (err: any) {
             console.error('Failed to load task:', err);
-            setError(err.message || 'Ошибка загрузки задания');
+            setError(translateApiMessage(err.message, 'Ошибка загрузки задания'));
             resetTeamsState();
         } finally {
             setLoading(false);
@@ -600,7 +601,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             console.error('Failed to load auto formation data:', err);
             setAutoFormationResult(null);
             setAutoFormationStudents([]);
-            setAutoFormationError(err.message || 'Не удалось загрузить данные автоформирования');
+            setAutoFormationError(translateApiMessage(err.message, 'Не удалось загрузить данные автоформирования'));
         } finally {
             setAutoFormationLoading(false);
         }
@@ -621,7 +622,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         } catch (err: any) {
             console.error('Failed to load captains:', err);
             setCaptains([]);
-            setCaptainsError(err.message || 'Не удалось загрузить список капитанов');
+            setCaptainsError(translateApiMessage(err.message, 'Не удалось загрузить список капитанов'));
         } finally {
             setCaptainsLoading(false);
         }
@@ -644,7 +645,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             );
         } catch (err: any) {
             console.error('Failed to select captains:', err);
-            setCaptainsError(err.message || 'Не удалось выбрать капитанов');
+            setCaptainsError(translateApiMessage(err.message, 'Не удалось выбрать капитанов'));
         } finally {
             setCaptainsSubmitting(false);
         }
@@ -675,7 +676,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             console.error('Failed to load captain flow data:', err);
             setCaptainTeam([]);
             setCaptainStudents([]);
-            setCaptainInviteError(err.message || 'Не удалось загрузить данные капитана');
+            setCaptainInviteError(translateApiMessage(err.message, 'Не удалось загрузить данные капитана'));
         } finally {
             setCaptainTeamLoading(false);
             setCaptainStudentsLoading(false);
@@ -696,7 +697,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             await loadCaptainFlowData();
         } catch (err: any) {
             console.error('Failed to send captain invitation:', err);
-            setCaptainInviteError(err.message || 'Не удалось отправить приглашение');
+            setCaptainInviteError(translateApiMessage(err.message, 'Не удалось отправить приглашение'));
         } finally {
             setCaptainInviteSubmittingId(null);
         }
@@ -718,7 +719,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         } catch (err: any) {
             console.error('Failed to load student invitations:', err);
             setStudentInvitations([]);
-            setStudentInvitationsError(err.message || 'Не удалось загрузить входящие приглашения');
+            setStudentInvitationsError(translateApiMessage(err.message, 'Не удалось загрузить входящие приглашения'));
         } finally {
             setStudentInvitationsLoading(false);
         }
@@ -745,7 +746,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             await loadStudentInvitations();
         } catch (err: any) {
             console.error('Failed to respond to invitation:', err);
-            setStudentInvitationsError(err.message || 'Не удалось обработать приглашение');
+            setStudentInvitationsError(translateApiMessage(err.message, 'Не удалось обработать приглашение'));
         } finally {
             setStudentInvitationActionId(null);
         }
@@ -791,7 +792,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setAutoFormationStudents(students);
         } catch (err: any) {
             console.error('Failed to run auto formation:', err);
-            setAutoFormationError(err.message || 'Не удалось запустить автоматическое формирование');
+            setAutoFormationError(translateApiMessage(err.message, 'Не удалось запустить автоматическое формирование'));
         } finally {
             setAutoFormationSubmitting(false);
         }
@@ -832,7 +833,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                 setMySolutionFiles([]);
             }
         } catch (err: any) {
-            if (err.message?.includes('404') || err.message?.includes('not found')) {
+            if (err.message?.includes('404') || err.message?.includes('not found') || err.message?.includes('Не найдено')) {
                 setMySolution(null);
                 setSolutionText('');
                 setMySolutionFiles([]);
@@ -891,7 +892,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setTeamActionError(null);
             setTeamActionSuccess(null);
             const response = await teamsService.enrollInTeam(courseId, taskId, teamId);
-            setTeamActionSuccess(response.message);
+            setTeamActionSuccess(translateApiMessage(response.message, 'Вы успешно вступили в команду'));
             await refreshTeamBlocks();
             const teamGradeInfo = await loadMyTeamGrade();
             if (teamGradeInfo?.distributionMode === 'TEAM_VOTE') {
@@ -913,7 +914,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setTeamActionError(null);
             setTeamActionSuccess(null);
             const response = await teamsService.leaveTeam(courseId, taskId, teamId);
-            setTeamActionSuccess(response.message);
+            setTeamActionSuccess(translateApiMessage(response.message, 'Вы успешно вышли из команды'));
             await refreshTeamBlocks();
             const teamGradeInfo = await loadMyTeamGrade();
             if (teamGradeInfo?.distributionMode === 'TEAM_VOTE') {
@@ -959,7 +960,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setSelectedFiles([]);
         } catch (err: any) {
             console.error('Failed to submit solution:', err);
-            alert(err.message || 'Ошибка отправки решения');
+            alert(translateApiMessage(err.message, 'Ошибка отправки решения'));
         } finally {
             setLoading(false);
         }
@@ -995,9 +996,10 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setShowGradeModal(false);
             setSelectedSolution(null);
             setGradeComment('');
+            window.location.reload();
         } catch (err: any) {
             console.error('Failed to grade solution:', err);
-            alert(err.message || 'Ошибка выставления оценки');
+            alert(translateApiMessage(err.message, 'Ошибка выставления оценки'));
         }
     };
 
@@ -1011,9 +1013,10 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setShowGradeModal(false);
             setSelectedSolution(null);
             setGradeComment('');
+            window.location.reload();
         } catch (err: any) {
             console.error('Failed to remove grade:', err);
-            alert(err.message || 'Ошибка снятия оценки');
+            alert(translateApiMessage(err.message, 'Ошибка снятия оценки'));
         }
     };
 
@@ -1045,7 +1048,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setShowSubmitForm(false);
         } catch (err: any) {
             console.error('Failed to delete solution:', err);
-            alert(err.message || 'Ошибка отмены отправки');
+            alert(translateApiMessage(err.message, 'Ошибка отмены отправки'));
         }
     };
 
@@ -1072,7 +1075,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setCommentInputs((prev) => ({ ...prev, [solutionId]: '' }));
         } catch (err: any) {
             console.error('Failed to create solution comment:', err);
-            alert(err.message || 'Ошибка добавления комментария');
+            alert(translateApiMessage(err.message, 'Ошибка добавления комментария'));
         } finally {
             setSubmittingCommentId(null);
         }

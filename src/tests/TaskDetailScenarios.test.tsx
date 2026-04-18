@@ -192,14 +192,14 @@ describe('TaskDetail scenarios tests', () => {
     });
 
     expect(teamsService.enrollInTeam).toHaveBeenCalledWith('course-1', 'task-1', 'team-a');
-    expect(result.current.state.teamActionSuccess).toContain('Successfully enrolled');
+    expect(result.current.state.teamActionSuccess).toContain('Вы успешно вступили в команду');
 
     await act(async () => {
       await result.current.functions.handleLeaveTeam('team-a');
     });
 
     expect(teamsService.leaveTeam).toHaveBeenCalledWith('course-1', 'task-1', 'team-a');
-    expect(result.current.state.teamActionSuccess).toContain('Successfully left');
+    expect(result.current.state.teamActionSuccess).toContain('Вы успешно вышли из команды');
   });
 
   test('7145: teacher can run automatic team formation', async () => {

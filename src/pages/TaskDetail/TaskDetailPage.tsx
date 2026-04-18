@@ -238,12 +238,16 @@ const TaskDetailPage = () => {
     return team.selfEnrollmentEnabled === false;
   };
 
+  const isCurrentStudentTeam = (team: CourseTeamAvailabilityDto) => {
+    return team.isStudentMember || state.currentTeam?.teamId === team.id;
+  };
+
   const getUnavailableReason = (team: CourseTeamAvailabilityDto): string | null => {
-    if (team.isStudentMember) {
+    if (isCurrentStudentTeam(team)) {
       return 'Вы уже состоите в этой команде';
     }
 
-    if (state.currentTeam && !team.isStudentMember) {
+    if (state.currentTeam && !isCurrentStudentTeam(team)) {
       return 'Сначала выйдите из текущей команды';
     }
 
@@ -577,7 +581,7 @@ const TaskDetailPage = () => {
                         return (
                           <div
                             key={team.id}
-                            className={`team-card team-card-unavailable ${team.isStudentMember ? 'team-card-current' : ''}`}
+                            className={`team-card team-card-unavailable ${isCurrentStudentTeam(team) ? 'team-card-current' : ''}`}
                           >
                             <div className="team-card-header">
                               <div>

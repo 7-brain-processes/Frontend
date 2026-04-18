@@ -143,13 +143,15 @@ const CourseDetailPage = () => {
           >
             Команды
           </button>
-          <button
-            className={`course-tab ${activeTab === 'teamplates' ? 'active' : ''}`}
-            onClick={() => setActiveTab('teamplates')}
-            data-testid="tab-teams"
-          >
-            Шаблоны требований к командам
-          </button>
+          {userRole === 'TEACHER' && (
+            <button
+              className={`course-tab ${activeTab === 'teamplates' ? 'active' : ''}`}
+              onClick={() => setActiveTab('teamplates')}
+              data-testid="tab-teamplates"
+            >
+              Шаблоны требований к командам
+            </button>
+          )}
         </div>
 
         <div className="course-content">
@@ -173,7 +175,7 @@ const CourseDetailPage = () => {
             <TeamsTab courseId={course.id} userRole={userRole} />
           )}
 
-          {activeTab === 'teamplates' && (
+          {userRole === 'TEACHER' && activeTab === 'teamplates' && (
             <TeamRequirementTemplateTab courseId={course.id} userRole={userRole} />
           )}
         </div>
