@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AssignmentsTab.css';
 import { PostDto, CourseRole, SolutionDto, PostType, SolutionStatus, CourseCategoryDto } from '../../types/api';
-import { categoryService, postsService, solutionsService, teamRequirementTemplateService } from '../../api/services';
-import { FormControl, MenuItem, Select } from "@mui/material";
+import { categoryService, multiCriteriaGradingService, postsService, solutionsService, teamRequirementTemplateService } from '../../api/services';
+import { FormControl, FormControlLabel, MenuItem, Select, Switch } from "@mui/material";
 import { TeamRequirementTemplateDto } from '../../types/TeamRequirementTemplate';
+import { CriteriaGradeResultDto, UpsertGradingConfigRequest } from '../../types/Criterion';
 
 const generateTemplateName = () => {
   const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -50,6 +51,54 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     requiredCategoryId: ''
   });
   const [categories, setCategories] = useState<CourseCategoryDto[]>([]);
+  const [gradingConfigForm, setGradingConfigForm] = useState<UpsertGradingConfigRequest>(
+    {
+      maxGrade: 0,
+      criteria: [
+        {
+          id: '',
+          type: 'PERCENTAGE',
+          title: '',
+          maxPoints: 0,
+          weight: 0,
+          sortOrder: 0
+        }
+      ],
+      modifiers: {
+        deadlines: {
+          enabled: false,
+          softDeadline: new Date(),
+          hardDeadline: new Date(),
+          softDeadlineBonus: 0,
+          earlySubmissionBonusPerDay: 0,
+          latePenaltyPerDay: 0,
+          maxLatePenaltyDays: 0
+        },
+        teamSize: {
+          enabled: false,
+          formula: ''
+        },
+        progressRegularity: {
+          enabled: false,
+          checkpointCount: 0,
+          pointsPerCheckpoint: 0
+        },
+        contributionVoting: {
+          enabled: false,
+          description: ''
+        }
+      },
+      resultsVisible: true
+    }
+  );
+  const [editGradingConfigForm, setEditGradingConfigForm] = useState<UpsertGradingConfigRequest | null>(null);
+  const [enabledParameters, setEnabledParameters] = useState<boolean>(true);
+  const [enabledDeadlines, setEnabledDeadlines] = useState<boolean>(true);
+  const [enabledTeamSize, setEnabledTeamSize] = useState<boolean>(true);
+  const [enabledProgressRegularity, setEnabledProgressRegularity] = useState<boolean>(true);
+  const [enabledContributionVoting, setEnabledContributionVoting] = useState<boolean>(true);
+
+  const [myGrade, setMyGrade] = useState<CriteriaGradeResultDto | null>(null);
 
   useEffect(() => {
     loadAssignments();
@@ -110,6 +159,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       const solution = await solutionsService.getMySolution(courseId, postId);
       setMySolution(solution);
       setSolutionText(solution.text || '');
+      const grade = await multiCriteriaGradingService.getCriteriaGrades(courseId, postId, solution.id);
+      setMyGrade(grade);
     } catch (err: any) {
       if (err.message?.includes('404') || err.message?.includes('not found') || err.message?.includes('Не найдено')) {
         setMySolution(null);
@@ -189,6 +240,45 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   const handleCreateAssignment = () => {
     setEditingAssignment(null);
     setAssignmentForm({ title: '', content: '', deadline: '', teamFormationMode: '' });
+    //setEditingAssignment(null);
+    setGradingConfigForm({
+      maxGrade: 0,
+      criteria: [
+        {
+          id: '',
+          type: 'PERCENTAGE',
+          title: '',
+          maxPoints: 0,
+          weight: 0,
+          sortOrder: 0
+        }
+      ],
+      modifiers: {
+        deadlines: {
+          enabled: false,
+          softDeadline: new Date(),
+          hardDeadline: new Date(),
+          softDeadlineBonus: 0,
+          earlySubmissionBonusPerDay: 0,
+          latePenaltyPerDay: 0,
+          maxLatePenaltyDays: 0
+        },
+        teamSize: {
+          enabled: false,
+          formula: ''
+        },
+        progressRegularity: {
+          enabled: false,
+          checkpointCount: 0,
+          pointsPerCheckpoint: 0
+        },
+        contributionVoting: {
+          enabled: false,
+          description: ''
+        }
+      },
+      resultsVisible: true
+    });
     setDeadlineError('');
     setShowCreateAssignment(true);
   };
@@ -201,6 +291,13 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       deadline: toDateTimeLocal(assignment.deadline),
       teamFormationMode: assignment.teamFormationMode || ''
     });
+    /*setEditingAssignment(null);
+    setGradingConfigForm({
+      maxGrade: gradingConfigForm.maxGrade,
+      criteria: gradingConfigForm.criteria,
+      modifiers: gradingConfigForm.modifiers,
+      resultsVisible: gradingConfigForm.resultsVisible
+    });*/
     setDeadlineError('');
     setShowCreateAssignment(true);
   };
@@ -259,6 +356,19 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
           deadline: assignmentForm.deadline ? new Date(assignmentForm.deadline).toISOString() : undefined,
           teamFormationMode: assignmentForm.teamFormationMode || undefined,
         });
+        if (updatedPost) {
+          if (enabledParameters) {
+            await multiCriteriaGradingService.upsertGradingConfig(courseId, updatedPost.id, {
+              maxGrade: gradingConfigForm.maxGrade,
+              criteria: gradingConfigForm.criteria,
+              modifiers: gradingConfigForm.modifiers,
+              resultsVisible: gradingConfigForm.resultsVisible
+            });
+          }
+          else {
+            await multiCriteriaGradingService.deleteGradingConfig(courseId, updatedPost.id);
+          }
+        }
         setAssignments(assignments.map(a => (a.id === editingAssignment.id ? updatedPost : a)));
       } else {
         const selectedMode = assignmentForm.teamFormationMode || undefined;
@@ -278,6 +388,10 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
             return false;
           }
           await applayTeamRequirementTemplate(templateId, newPost.id);
+        }
+
+        if (newPost) {
+          await multiCriteriaGradingService.upsertGradingConfig(courseId, newPost.id, gradingConfigForm);
         }
 
         setAssignments([...assignments, newPost]);
@@ -420,7 +534,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
 
                 {mySolution.status === 'GRADED' && mySolution.grade !== undefined && (
                   <div className="solution-grade">
-                    <strong>Оценка:</strong> {mySolution.grade} / 100
+                    <strong>Оценка:</strong> {myGrade?.finalScore} / {myGrade?.maxGrade}
                     {mySolution.gradedAt && (
                       <span className="grade-date">
                         {new Date(mySolution.gradedAt).toLocaleDateString('ru-RU')}
@@ -796,8 +910,269 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                   </Select>
                 </FormControl>
               </div>
-            </div>
 
+              <div>
+                <h2>Параметры выставления оценок</h2>
+                {editingAssignment &&
+                  <div style={{ paddingLeft: '20px' }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={enabledParameters}
+                          onChange={(_, checked) => setEnabledParameters(checked)}
+                          color="primary"
+                        />
+                      }
+                      label=""
+                    />
+                  </div>
+                }
+              </div>
+              <div className="form-group">
+                <label htmlFor="assignment-content">Максимальная оценка</label>
+                <input
+                  id="assignment-content"
+                  value={gradingConfigForm.maxGrade}
+                  type="number"
+                  onChange={e => setGradingConfigForm({ ...gradingConfigForm, maxGrade: Number(e.target.value) })}
+                  placeholder="Введите максимальную оценку"
+                  data-testid="assignment-content-input"
+                />
+              </div>
+              <div>
+                <h2>Модификаторы</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
+                    <h2>Голосование за вклад</h2>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={enabledContributionVoting}
+                          onChange={(_, checked) => setEnabledContributionVoting(checked)}
+                          color="primary"
+                        />
+                      }
+                      label=""
+                    />
+                  </div>
+                  <textarea
+                    id="assignment-content"
+                    value={gradingConfigForm.modifiers.contributionVoting.description}
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        contributionVoting: {
+                          ...gradingConfigForm.modifiers.contributionVoting,
+                          description: e.target.value
+                        }
+                      }
+                    })}
+                    placeholder="Введите описание"
+                    rows={8}
+                    data-testid="assignment-content-input"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
+                    <h2>Размер команды</h2>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={enabledTeamSize}
+                          onChange={(_, checked) => setEnabledTeamSize(checked)}
+                          color="primary"
+                        />
+                      }
+                      label=""
+                    />
+                  </div>
+                  <textarea
+                    id="assignment-content"
+                    value={gradingConfigForm.modifiers.teamSize.formula}
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        teamSize: {
+                          ...gradingConfigForm.modifiers.teamSize,
+                          formula: e.target.value
+                        }
+                      }
+                    })}
+                    placeholder="Введите формулы подсчета"
+                    rows={8}
+                    data-testid="assignment-content-input"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
+                    <h2>Прогресс регулярности</h2>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={enabledProgressRegularity}
+                          onChange={(_, checked) => setEnabledProgressRegularity(checked)}
+                          color="primary"
+                        />
+                      }
+                      label=""
+                    />
+                  </div>
+                  <input
+                    id="assignment-content"
+                    value={gradingConfigForm.modifiers.progressRegularity.checkpointCount}
+                    type='number'
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        progressRegularity: {
+                          ...gradingConfigForm.modifiers.progressRegularity,
+                          checkpointCount: Number(e.target.value)
+                        }
+                      }
+                    })}
+                    placeholder="Введите количество контрольных точек"
+                    data-testid="assignment-content-input"
+                  />
+                  <input
+                    id="assignment-content"
+                    value={gradingConfigForm.modifiers.progressRegularity.pointsPerCheckpoint}
+                    type='number'
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        progressRegularity: {
+                          ...gradingConfigForm.modifiers.progressRegularity,
+                          pointsPerCheckpoint: Number(e.target.value)
+                        }
+                      }
+                    })}
+                    placeholder="Введите количество очков за контрольную точку"
+                    data-testid="assignment-content-input"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
+                    <h2>Дедлайны</h2>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={enabledDeadlines}
+                          onChange={(_, checked) => setEnabledDeadlines(checked)}
+                          color="primary"
+                        />
+                      }
+                      label=""
+                    />
+                  </div>
+                  <input
+                    id="assignment-content"
+                    value={new Date(gradingConfigForm.modifiers.deadlines.softDeadline).toISOString().split('T')[0]}
+                    type='date'
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        deadlines: {
+                          ...gradingConfigForm.modifiers.deadlines,
+                          softDeadline: new Date(e.target.value)
+                        }
+                      }
+                    })}
+                    placeholder="Введите мягкий дедлайн"
+                    data-testid="assignment-content-input"
+                  />
+                  <input
+                    id="assignment-content"
+                    value={new Date(gradingConfigForm.modifiers.deadlines.hardDeadline).toISOString().split('T')[0]}
+                    type='date'
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        deadlines: {
+                          ...gradingConfigForm.modifiers.deadlines,
+                          hardDeadline: new Date(e.target.value)
+                        }
+                      }
+                    })}
+                    placeholder="Введите жесткий дедлайн"
+                    data-testid="assignment-content-input"
+                  />
+                  <input
+                    id="assignment-content"
+                    value={gradingConfigForm.modifiers.deadlines.softDeadlineBonus}
+                    type='number'
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        deadlines: {
+                          ...gradingConfigForm.modifiers.deadlines,
+                          softDeadlineBonus: Number(e.target.value)
+                        }
+                      }
+                    })}
+                    placeholder="Введите бонус за мягкий дедлайн"
+                    data-testid="assignment-content-input"
+                  />
+                  <input
+                    id="assignment-content"
+                    value={gradingConfigForm.modifiers.deadlines.earlySubmissionBonusPerDay}
+                    type='number'
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        deadlines: {
+                          ...gradingConfigForm.modifiers.deadlines,
+                          earlySubmissionBonusPerDay: Number(e.target.value)
+                        }
+                      }
+                    })}
+                    placeholder="Введите бонус за досрочную сдачу задания"
+                    data-testid="assignment-content-input"
+                  />
+                  <input
+                    id="assignment-content"
+                    value={gradingConfigForm.modifiers.deadlines.latePenaltyPerDay}
+                    type='number'
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        deadlines: {
+                          ...gradingConfigForm.modifiers.deadlines,
+                          latePenaltyPerDay: Number(e.target.value)
+                        }
+                      }
+                    })}
+                    placeholder="Введите штраф за просрочку дедлайна"
+                    data-testid="assignment-content-input"
+                  />
+                  <input
+                    id="assignment-content"
+                    value={gradingConfigForm.modifiers.deadlines.maxLatePenaltyDays}
+                    type='number'
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        deadlines: {
+                          ...gradingConfigForm.modifiers.deadlines,
+                          maxLatePenaltyDays: Number(e.target.value)
+                        }
+                      }
+                    })}
+                    placeholder="Введите максимальное количество дней штрафа за просрочку дедлайна"
+                    data-testid="assignment-content-input"
+                  />
+                </div>
+              </div>
+            </div>
             <div className="modal-footer">
               <button className="button-secondary" onClick={() => setShowCreateAssignment(false)}>
                 Отмена
