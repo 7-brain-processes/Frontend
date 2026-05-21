@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PostDto, CourseRole, PostType } from '../../types/api';
 import { CourseCategoryDto, FileDto } from '../../types';
-import { categoryService, postsService, teamRequirementTemplateService } from '../../api/services';
+import { categoryService, multiCriteriaGradingService, postsService, teamRequirementTemplateService } from '../../api/services';
 import './StreamTab.css';
 import PublicCommentsDialog from '../../pages/PublicComments/PublicCommentsDialog';
 import { usePublicCommentsDialog } from '../../pages/PublicComments/hooks/usePublicCommentsDialog';
-import { FormControl, MenuItem, Select } from '@mui/material';
+import { FormControl, FormControlLabel, MenuItem, Select, Switch } from '@mui/material';
+import { CriterionConfigDto, CriterionType, UpsertGradingConfigRequest } from '../../types/Criterion';
 
 const generateTemplateName = () => {
   const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -17,6 +18,80 @@ interface StreamTabProps {
   courseId: string;
   userRole: CourseRole;
 }
+
+const createInitialGradingConfig = (): UpsertGradingConfigRequest => ({
+  maxGrade: 0,
+  criteria: [
+    {
+      id: '',
+      type: 'PERCENTAGE',
+      title: '',
+      maxPoints: 0,
+      weight: 0,
+      sortOrder: 0,
+    },
+  ],
+  modifiers: {
+    deadlines: {
+      enabled: false,
+      softDeadline: new Date(),
+      hardDeadline: new Date(),
+      softDeadlineBonus: 0,
+      earlySubmissionBonusPerDay: 0,
+      latePenaltyPerDay: 0,
+      maxLatePenaltyDays: 0,
+    },
+    teamSize: {
+      enabled: false,
+      formula: '',
+    },
+    progressRegularity: {
+      enabled: false,
+      checkpointCount: 0,
+      pointsPerCheckpoint: 0,
+    },
+    contributionVoting: {
+      enabled: false,
+      description: '',
+    },
+  },
+  resultsVisible: true,
+});
+
+const normalizeGradingConfig = (
+  gradingConfig?: Partial<UpsertGradingConfigRequest> | null
+): UpsertGradingConfigRequest => {
+  const initialConfig = createInitialGradingConfig();
+
+  return {
+    maxGrade: gradingConfig?.maxGrade ?? initialConfig.maxGrade,
+    criteria: gradingConfig?.criteria?.length ? gradingConfig.criteria : initialConfig.criteria,
+    modifiers: {
+      deadlines: {
+        ...initialConfig.modifiers.deadlines,
+        ...(gradingConfig?.modifiers?.deadlines ?? {}),
+      },
+      teamSize: {
+        ...initialConfig.modifiers.teamSize,
+        ...(gradingConfig?.modifiers?.teamSize ?? {}),
+      },
+      progressRegularity: {
+        ...initialConfig.modifiers.progressRegularity,
+        ...(gradingConfig?.modifiers?.progressRegularity ?? {}),
+      },
+      contributionVoting: {
+        ...initialConfig.modifiers.contributionVoting,
+        ...(gradingConfig?.modifiers?.contributionVoting ?? {}),
+      },
+    },
+    resultsVisible: gradingConfig?.resultsVisible ?? initialConfig.resultsVisible,
+  };
+};
+
+const isGradingConfigUnsupportedError = (err: unknown): boolean => {
+  const message = err instanceof Error ? err.message : String(err || '');
+  return message.includes('404') || message.includes('Not found') || message.includes('not found') || message.includes('Не найдено');
+};
 
 const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const navigate = useNavigate();
@@ -42,6 +117,79 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const [loadingMaterialsPostId, setLoadingMaterialsPostId] = useState<string | null>(null);
   const [titleError, setTitleError] = useState('');
   const [deadlineError, setDeadlineError] = useState('');
+  const gradingModifierCardStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    marginBottom: '16px',
+    padding: '18px',
+    border: '1px solid #e0e3e7',
+    borderRadius: '14px',
+    background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)',
+  };
+  const gradingModifierCardHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    marginBottom: '12px',
+  };
+  const gradingSectionTitleStyle: React.CSSProperties = {
+    margin: '18px 0 10px',
+    fontSize: '18px',
+    fontWeight: 600,
+    lineHeight: 1.3,
+    color: '#202124',
+  };
+  const gradingModifierTitleStyle: React.CSSProperties = {
+    margin: 0,
+    fontSize: '15px',
+    fontWeight: 600,
+    lineHeight: 1.3,
+    color: '#202124',
+  };
+  const gradingModifierFieldStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 12px',
+    border: '1px solid #d2d7de',
+    borderRadius: '12px',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    color: '#202124',
+    background: '#fff',
+    boxSizing: 'border-box',
+  };
+  const criteriaGridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '12px',
+  };
+  const criterionCardStyle: React.CSSProperties = {
+    padding: '16px',
+    border: '1px solid #e0e3e7',
+    borderRadius: '14px',
+    background: '#fcfdff',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    marginBottom: '12px',
+  };
+  const criterionHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+  };
+  const criterionActionButtonStyle: React.CSSProperties = {
+    border: 'none',
+    background: '#eef3fd',
+    color: '#174ea6',
+    borderRadius: '10px',
+    padding: '8px 12px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 600,
+  };
   const [templateForm, setTemplateForm] = useState({
     name: generateTemplateName(),
     minTeamSize: 0,
@@ -49,6 +197,46 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     requiredCategoryId: ''
   });
   const [categories, setCategories] = useState<CourseCategoryDto[]>([]);
+  const [gradingConfigForm, setGradingConfigForm] = useState<UpsertGradingConfigRequest>(createInitialGradingConfig());
+
+  const updateCriterion = (index: number, field: keyof CriterionConfigDto, value: string | number | CriterionType) => {
+    setGradingConfigForm(prev => ({
+      ...prev,
+      criteria: prev.criteria.map((criterion, criterionIndex) =>
+        criterionIndex === index ? { ...criterion, [field]: value } : criterion
+      ),
+    }));
+  };
+
+  const addCriterion = () => {
+    setGradingConfigForm(prev => ({
+      ...prev,
+      criteria: [
+        ...prev.criteria,
+        {
+          id: '',
+          type: 'PERCENTAGE',
+          title: '',
+          maxPoints: 0,
+          weight: 0,
+          sortOrder: prev.criteria.length,
+        },
+      ],
+    }));
+  };
+
+  const removeCriterion = (index: number) => {
+    setGradingConfigForm(prev => {
+      const nextCriteria = prev.criteria.filter((_, criterionIndex) => criterionIndex !== index);
+
+      return {
+        ...prev,
+        criteria: nextCriteria.length
+          ? nextCriteria.map((criterion, criterionIndex) => ({ ...criterion, sortOrder: criterionIndex }))
+          : createInitialGradingConfig().criteria,
+      };
+    });
+  };
 
   const loadCategoriesFunc = async () => {
     if (!courseId) return false;
@@ -109,6 +297,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
   const handleCreatePost = () => {
     setEditingPost(null);
     setPostForm({ title: '', content: '', type: 'MATERIAL', teamFormationMode: '', deadline: '' });
+    setGradingConfigForm(createInitialGradingConfig());
     setTitleError('');
     setDeadlineError('');
     setSelectedFiles([]);
@@ -130,6 +319,17 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     setDeadlineError('');
     setSelectedFiles([]);
     setIsLoadingEditingPostMaterials(true);
+
+    if (post.type === 'TASK') {
+      try {
+        const gradingConfig = await multiCriteriaGradingService.getGradingConfig(courseId, post.id);
+        setGradingConfigForm(normalizeGradingConfig(gradingConfig));
+      } catch {
+        setGradingConfigForm(createInitialGradingConfig());
+      }
+    } else {
+      setGradingConfigForm(createInitialGradingConfig());
+    }
 
     try {
       const files = await postsService.listPostMaterials(courseId, post.id);
@@ -176,6 +376,19 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     }
   };
 
+  const saveGradingConfigIfSupported = async (postId: string) => {
+    try {
+      await multiCriteriaGradingService.upsertGradingConfig(courseId, postId, gradingConfigForm);
+    } catch (err) {
+      if (isGradingConfigUnsupportedError(err)) {
+        console.warn('Grading config endpoint is not available on this backend, skipping save.', err);
+        return;
+      }
+
+      throw err;
+    }
+  };
+
   const handleSavePost = async () => {
     if (!postForm.title.trim()) {
       setTitleError('Введите название поста');
@@ -199,6 +412,10 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           deadline: postForm.deadline ? new Date(postForm.deadline).toISOString() : undefined,
           teamFormationMode: postForm.type === 'TASK' ? postForm.teamFormationMode || undefined : undefined,
         });
+
+        if (postForm.type === 'TASK') {
+          await multiCriteriaGradingService.upsertGradingConfig(courseId, editingPost.id, gradingConfigForm);
+        }
 
         if (selectedFiles.length > 0) {
           for (const file of selectedFiles) {
@@ -232,6 +449,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
             }
             await applayTeamRequirementTemplate(templateId, newPost.id);
           }
+
+          await multiCriteriaGradingService.upsertGradingConfig(courseId, newPost.id, gradingConfigForm);
 
           if (selectedFiles.length > 0) {
             for (const file of selectedFiles) {
@@ -674,6 +893,352 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                         ))}
                       </Select>
                     </FormControl>
+                  </div>
+                  <div>
+                    <h2>Параметры выставления оценок</h2>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="task-max-grade">Максимальная оценка</label>
+                    <input
+                      id="task-max-grade"
+                      value={gradingConfigForm.maxGrade}
+                      type="number"
+                      onChange={(e) => setGradingConfigForm({ ...gradingConfigForm, maxGrade: Number(e.target.value) })}
+                      placeholder="Введите максимальную оценку"
+                    />
+                  </div>
+                  <div>
+                    <h2>Модификаторы</h2>
+                    <h2>{'Критерии оценивания'}</h2>
+                    {gradingConfigForm.criteria.map((criterion, index) => (
+                      <div key={`criterion-${index}`} style={criterionCardStyle}>
+                        <div style={criterionHeaderStyle}>
+                          <span className="grading-field-label">{`Критерий ${index + 1}`}</span>
+                          <button type="button" style={criterionActionButtonStyle} onClick={() => removeCriterion(index)}>
+                            {'Удалить'}
+                          </button>
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label htmlFor={`stream-criterion-title-${index}`}>{'Название критерия'}</label>
+                          <input
+                            id={`stream-criterion-title-${index}`}
+                            value={criterion.title}
+                            onChange={(e) => updateCriterion(index, 'title', e.target.value)}
+                            placeholder={'Например, качество решения'}
+                          />
+                        </div>
+                        <div style={criteriaGridStyle}>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label htmlFor={`stream-criterion-type-${index}`}>{'Тип'}</label>
+                            <select
+                              id={`stream-criterion-type-${index}`}
+                              value={criterion.type}
+                              onChange={(e) => updateCriterion(index, 'type', e.target.value as CriterionType)}
+                              style={gradingModifierFieldStyle}
+                            >
+                              <option value="PERCENTAGE">{'Проценты'}</option>
+                              <option value="POINTS">{'Баллы'}</option>
+                              <option value="YES_NO">{'Да / нет'}</option>
+                            </select>
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label htmlFor={`stream-criterion-max-points-${index}`}>{'Максимум баллов'}</label>
+                            <input
+                              id={`stream-criterion-max-points-${index}`}
+                              type="number"
+                              value={criterion.maxPoints}
+                              onChange={(e) => updateCriterion(index, 'maxPoints', Number(e.target.value))}
+                            />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label htmlFor={`stream-criterion-weight-${index}`}>{'Вес'}</label>
+                            <input
+                              id={`stream-criterion-weight-${index}`}
+                              type="number"
+                              value={criterion.weight}
+                              onChange={(e) => updateCriterion(index, 'weight', Number(e.target.value))}
+                            />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label htmlFor={`stream-criterion-sort-order-${index}`}>{'Порядок'}</label>
+                            <input
+                              id={`stream-criterion-sort-order-${index}`}
+                              type="number"
+                              value={criterion.sortOrder}
+                              onChange={(e) => updateCriterion(index, 'sortOrder', Number(e.target.value))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <button type="button" className="button-secondary" onClick={addCriterion}>
+                      {'Добавить критерий'}
+                    </button>
+                  </div>
+                  <div>
+                    <h2>{'Модификаторы'}</h2>
+                    <div className="grading-modifier-card" style={gradingModifierCardStyle}>
+                      <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
+                        <h2>Голосование за вклад</h2>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={gradingConfigForm.modifiers.contributionVoting.enabled}
+                              onChange={(_, checked) => setGradingConfigForm({
+                                ...gradingConfigForm,
+                                modifiers: {
+                                  ...gradingConfigForm.modifiers,
+                                  contributionVoting: {
+                                    ...gradingConfigForm.modifiers.contributionVoting,
+                                    enabled: checked,
+                                  },
+                                },
+                              })}
+                              color="primary"
+                            />
+                          }
+                          label=""
+                        />
+                      </div>
+                      <textarea
+                        style={gradingModifierFieldStyle}
+                        value={gradingConfigForm.modifiers.contributionVoting.description}
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            contributionVoting: {
+                              ...gradingConfigForm.modifiers.contributionVoting,
+                              description: e.target.value,
+                            },
+                          },
+                        })}
+                        placeholder="Введите описание"
+                        rows={4}
+                      />
+                    </div>
+                    <div className="grading-modifier-card" style={gradingModifierCardStyle}>
+                      <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
+                        <h2>Размер команды</h2>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={gradingConfigForm.modifiers.teamSize.enabled}
+                              onChange={(_, checked) => setGradingConfigForm({
+                                ...gradingConfigForm,
+                                modifiers: {
+                                  ...gradingConfigForm.modifiers,
+                                  teamSize: {
+                                    ...gradingConfigForm.modifiers.teamSize,
+                                    enabled: checked,
+                                  },
+                                },
+                              })}
+                              color="primary"
+                            />
+                          }
+                          label=""
+                        />
+                      </div>
+                      <textarea
+                        style={gradingModifierFieldStyle}
+                        value={gradingConfigForm.modifiers.teamSize.formula}
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            teamSize: {
+                              ...gradingConfigForm.modifiers.teamSize,
+                              formula: e.target.value,
+                            },
+                          },
+                        })}
+                        placeholder="Введите формулы подсчета"
+                        rows={4}
+                      />
+                    </div>
+                    <div className="grading-modifier-card" style={gradingModifierCardStyle}>
+                      <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
+                        <h2>Прогресс регулярности</h2>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={gradingConfigForm.modifiers.progressRegularity.enabled}
+                              onChange={(_, checked) => setGradingConfigForm({
+                                ...gradingConfigForm,
+                                modifiers: {
+                                  ...gradingConfigForm.modifiers,
+                                  progressRegularity: {
+                                    ...gradingConfigForm.modifiers.progressRegularity,
+                                    enabled: checked,
+                                  },
+                                },
+                              })}
+                              color="primary"
+                            />
+                          }
+                          label=""
+                        />
+                      </div>
+                      <span className="grading-field-label">Количество контрольных точек</span>
+                      <input
+                        style={gradingModifierFieldStyle}
+                        value={gradingConfigForm.modifiers.progressRegularity.checkpointCount}
+                        type="number"
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            progressRegularity: {
+                              ...gradingConfigForm.modifiers.progressRegularity,
+                              checkpointCount: Number(e.target.value),
+                            },
+                          },
+                        })}
+                        placeholder="Введите количество контрольных точек"
+                      />
+                      <span className="grading-field-label">Баллы за одну точку</span>
+                      <input
+                        style={gradingModifierFieldStyle}
+                        value={gradingConfigForm.modifiers.progressRegularity.pointsPerCheckpoint}
+                        type="number"
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            progressRegularity: {
+                              ...gradingConfigForm.modifiers.progressRegularity,
+                              pointsPerCheckpoint: Number(e.target.value),
+                            },
+                          },
+                        })}
+                        placeholder="Введите количество очков за контрольную точку"
+                      />
+                    </div>
+                    <div className="grading-modifier-card" style={gradingModifierCardStyle}>
+                      <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
+                        <h2>Дедлайны</h2>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={gradingConfigForm.modifiers.deadlines.enabled}
+                              onChange={(_, checked) => setGradingConfigForm({
+                                ...gradingConfigForm,
+                                modifiers: {
+                                  ...gradingConfigForm.modifiers,
+                                  deadlines: {
+                                    ...gradingConfigForm.modifiers.deadlines,
+                                    enabled: checked,
+                                  },
+                                },
+                              })}
+                              color="primary"
+                            />
+                          }
+                          label=""
+                        />
+                      </div>
+                      <span className="grading-field-label">Мягкий дедлайн</span>
+                      <input
+                        style={gradingModifierFieldStyle}
+                        value={new Date(gradingConfigForm.modifiers.deadlines.softDeadline).toISOString().split('T')[0]}
+                        type="date"
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            deadlines: {
+                              ...gradingConfigForm.modifiers.deadlines,
+                              softDeadline: new Date(e.target.value),
+                            },
+                          },
+                        })}
+                      />
+                      <span className="grading-field-label">Жёсткий дедлайн</span>
+                      <input
+                        style={gradingModifierFieldStyle}
+                        value={new Date(gradingConfigForm.modifiers.deadlines.hardDeadline).toISOString().split('T')[0]}
+                        type="date"
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            deadlines: {
+                              ...gradingConfigForm.modifiers.deadlines,
+                              hardDeadline: new Date(e.target.value),
+                            },
+                          },
+                        })}
+                      />
+                      <span className="grading-field-label">Бонус за мягкий дедлайн</span>
+                      <input
+                        style={gradingModifierFieldStyle}
+                        value={gradingConfigForm.modifiers.deadlines.softDeadlineBonus}
+                        type="number"
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            deadlines: {
+                              ...gradingConfigForm.modifiers.deadlines,
+                              softDeadlineBonus: Number(e.target.value),
+                            },
+                          },
+                        })}
+                        placeholder="Введите бонус за мягкий дедлайн"
+                      />
+                      <span className="grading-field-label">Бонус за досрочный день</span>
+                      <input
+                        style={gradingModifierFieldStyle}
+                        value={gradingConfigForm.modifiers.deadlines.earlySubmissionBonusPerDay}
+                        type="number"
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            deadlines: {
+                              ...gradingConfigForm.modifiers.deadlines,
+                              earlySubmissionBonusPerDay: Number(e.target.value),
+                            },
+                          },
+                        })}
+                        placeholder="Введите бонус за досрочную сдачу за день"
+                      />
+                      <span className="grading-field-label">Штраф за день просрочки</span>
+                      <input
+                        style={gradingModifierFieldStyle}
+                        value={gradingConfigForm.modifiers.deadlines.latePenaltyPerDay}
+                        type="number"
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            deadlines: {
+                              ...gradingConfigForm.modifiers.deadlines,
+                              latePenaltyPerDay: Number(e.target.value),
+                            },
+                          },
+                        })}
+                        placeholder="Введите штраф за просрочку за день"
+                      />
+                      <span className="grading-field-label">Максимум дней штрафа</span>
+                      <input
+                        style={gradingModifierFieldStyle}
+                        value={gradingConfigForm.modifiers.deadlines.maxLatePenaltyDays}
+                        type="number"
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            deadlines: {
+                              ...gradingConfigForm.modifiers.deadlines,
+                              maxLatePenaltyDays: Number(e.target.value),
+                            },
+                          },
+                        })}
+                        placeholder="Введите максимум дней штрафа"
+                      />
+                    </div>
                   </div>
                 </div>
               )}

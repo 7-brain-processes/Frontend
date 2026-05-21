@@ -10,3 +10,4 @@ export * from './teamFormation';
 export * from './teamInvitations';
 export * from './teamGrades';
 export * from './teamRequirementTemplate';
+export * from './multiCriteriaGrading';
