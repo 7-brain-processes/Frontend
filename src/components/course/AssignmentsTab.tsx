@@ -1099,36 +1099,36 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                 {gradingConfigForm.criteria.map((criterion, index) => (
                   <div key={`criterion-${index}`} style={criterionCardStyle}>
                     <div style={criterionHeaderStyle}>
-                      <span className="grading-field-label">{`ÐšÑ€Ð¸Ñ‚ÐµÑ€Ð¸Ð¹ ${index + 1}`}</span>
+                      <span className="grading-field-label">{`Критерий ${index + 1}`}</span>
                       <button type="button" style={criterionActionButtonStyle} onClick={() => removeCriterion(index)}>
-                        Ð£Ð´Ð°Ð»Ð¸Ñ‚ÑŒ
+                        Удалить
                       </button>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label htmlFor={`criterion-title-${index}`}>ÐÐ°Ð·Ð²Ð°Ð½Ð¸Ðµ ÐºÑ€Ð¸Ñ‚ÐµÑ€Ð¸Ñ</label>
+                      <label htmlFor={`criterion-title-${index}`}>Название критерия</label>
                       <input
                         id={`criterion-title-${index}`}
                         value={criterion.title}
                         onChange={e => updateCriterion(index, 'title', e.target.value)}
-                        placeholder="ÐÐ°Ð¿Ñ€Ð¸Ð¼ÐµÑ€, ÐºÐ°Ñ‡ÐµÑÑ‚Ð²Ð¾ Ñ€ÐµÑˆÐµÐ½Ð¸Ñ"
+                        placeholder="Например, качество решения"
                       />
                     </div>
                     <div style={criteriaGridStyle}>
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label htmlFor={`criterion-type-${index}`}>Ð¢Ð¸Ð¿</label>
+                        <label htmlFor={`criterion-type-${index}`}>Тип</label>
                         <select
                           id={`criterion-type-${index}`}
                           value={criterion.type}
                           onChange={e => updateCriterion(index, 'type', e.target.value as CriterionType)}
                           style={gradingModifierFieldStyle}
                         >
-                          <option value="PERCENTAGE">ÐŸÑ€Ð¾Ñ†ÐµÐ½Ñ‚Ñ‹</option>
-                          <option value="POINTS">Ð‘Ð°Ð»Ð»Ñ‹</option>
-                          <option value="YES_NO">Ð”Ð° / Ð½ÐµÑ‚</option>
+                          <option value="PERCENTAGE">Проценты</option>
+                          <option value="POINTS">Баллы</option>
+                          <option value="YES_NO">Да / нет</option>
                         </select>
                       </div>
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label htmlFor={`criterion-max-points-${index}`}>ÐœÐ°ÐºÑÐ¸Ð¼ÑƒÐ¼ Ð±Ð°Ð»Ð»Ð¾Ð²</label>
+                        <label htmlFor={`criterion-max-points-${index}`}>Максимум баллов</label>
                         <input
                           id={`criterion-max-points-${index}`}
                           type="number"
@@ -1137,7 +1137,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                         />
                       </div>
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label htmlFor={`criterion-weight-${index}`}>Ð’ÐµÑ</label>
+                        <label htmlFor={`criterion-weight-${index}`}>Вес</label>
                         <input
                           id={`criterion-weight-${index}`}
                           type="number"
@@ -1146,7 +1146,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                         />
                       </div>
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label htmlFor={`criterion-sort-order-${index}`}>ÐŸÐ¾Ñ€ÑÐ´Ð¾Ðº</label>
+                        <label htmlFor={`criterion-sort-order-${index}`}>Порядок</label>
                         <input
                           id={`criterion-sort-order-${index}`}
                           type="number"
@@ -1158,7 +1158,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                   </div>
                 ))}
                 <button type="button" className="button-secondary" onClick={addCriterion}>
-                  Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ ÐºÑ€Ð¸Ñ‚ÐµÑ€Ð¸Ð¹
+                  Добавить критерий
                 </button>
               </div>
               <div>
