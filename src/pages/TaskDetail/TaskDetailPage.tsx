@@ -7,6 +7,7 @@ import { useTeamGrade } from '../../components/course/TeamGrade/hooks/useTeamGra
 import GradeDialog from '../../components/course/TeamGrade/GradeDialog';
 import CaptainGradeDialog from '../../components/course/TeamGrade/CaptainGradeDialog';
 import './TaskDetailPage.css';
+import MyAssignmentItem from './components/MyAssignmentItem';
 
 const translateTeamFormationMode = {
   FREE: 'самостоятельное',
@@ -200,25 +201,25 @@ const TaskDetailPage = () => {
     username: member.user.username,
   })) || (state.isCurrentUserCaptain
     ? state.captainTeam.map((member) => ({
-        id: member.userId,
-        displayName: member.displayName,
-        username: member.username,
-      }))
+      id: member.userId,
+      displayName: member.displayName,
+      username: member.username,
+    }))
     : []);
 
   const captainDialogMembers = state.captainTeam.length > 0
     ? state.captainTeam.map((member) => ({
-        user: {
-          id: member.userId,
-          displayName: member.displayName,
-        },
-      }))
+      user: {
+        id: member.userId,
+        displayName: member.displayName,
+      },
+    }))
     : (state.currentTeam?.members || []).map((member) => ({
-        user: {
-          id: member.user.id,
-          displayName: member.user.displayName,
-        },
-      }));
+      user: {
+        id: member.user.id,
+        displayName: member.user.displayName,
+      },
+    }));
 
   const gradeVoteTotal = state.gradeVoteForm.reduce((sum, item) => sum + item.grade, 0);
 
@@ -306,7 +307,7 @@ const TaskDetailPage = () => {
 
     if (!team) {
       let errorMsg = 'Не удалось определить команду этого участника для оценки в этом задании.\n\n';
-      
+
       if (courseTeams.length === 0) {
         errorMsg += 'Причина: Команды не загружены. Попробуйте перезагрузить страницу.';
       } else if (isAvailableTeamsLoaded && availableTaskTeamIds.size === 0) {
@@ -415,6 +416,20 @@ const TaskDetailPage = () => {
                 <p>{state.task.content}</p>
               </div>
             )}
+
+            <span>Мои заявки:</span>
+            {state.myAssignments.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {
+                  state.myAssignments.map(myAssignment => (
+                    <MyAssignmentItem key={myAssignment.assignmentId} myAssignment={myAssignment} courseId={courseId} taskId={taskId} />
+                  ))
+                }
+              </div>
+            ) : (
+              <span>Нет заявок</span>
+            )
+            }
 
             {state.task.teamFormationMode && (
               <div className="task-description">

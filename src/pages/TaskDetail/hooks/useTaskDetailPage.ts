@@ -23,6 +23,8 @@ import {
     CaptainStudentGradeEntry,
 } from "../../../types/api";
 import { translateApiMessage } from "../../../utils/translateApiMessage";
+import { PeerReviewAssignmentDto } from "../../../types/Peer2peer";
+import { peer2peerService } from "../../../api/peer-to-peer";
 
 type TeamsErrorCode = '403' | '404' | 'generic' | null;
 
@@ -142,9 +144,25 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
     const [submittingCommentId, setSubmittingCommentId] = useState<string | null>(null);
 
+    const [myAssignments, setMyAssignments] = useState<PeerReviewAssignmentDto[]>([]);
+    const getMyAssignments = async () => {
+        if (!courseId || !taskId) return;
+
+        try {
+            const myAssignmentsResponse = await peer2peerService.getMyAssignments(courseId, taskId);
+            setMyAssignments(myAssignmentsResponse);
+        } catch (err: any) {
+            console.error('Ошибка получения списка моих назначенных проверок:', err);
+        }
+    };
+
     useEffect(() => {
         if (!loadingRole) {
             loadTask();
+            if (task?.deadline && new Date(task?.deadline) > new Date() && courseId && taskId) {
+                peer2peerService.distributeRound1(courseId, taskId);
+            }
+            getMyAssignments();
         }
     }, [courseId, taskId, userRole, loadingRole]);
 
@@ -316,9 +334,9 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                 setCurrentTeamError(null);
             } else {
                 console.error('Failed to load current team:', err);
-            const status = getHttpStatus(err);
-            const message = getCurrentTeamErrorMessage(status);
-            setCurrentTeamError(message);
+                const status = getHttpStatus(err);
+                const message = getCurrentTeamErrorMessage(status);
+                setCurrentTeamError(message);
             }
         } finally {
             setCurrentTeamLoading(false);
@@ -1171,6 +1189,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             solutionComments,
             commentInputs,
             submittingCommentId,
+            myAssignments
         },
         functions: {
             setShowSubmitForm,
