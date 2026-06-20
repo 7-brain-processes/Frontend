@@ -1,4 +1,6 @@
-export type CriterionType = 'YES_NO' | 'PERCENTAGE' | 'POINTS';
+import { PeerReviewConfigDto, PeerReviewConfigRequest } from "./Peer2peer";
+
+export type CriterionType = 'YES_NO' | 'PERCENTAGE' | 'POINTS' | 'PEER_REVIEW';
 
 export interface ContributionModifierDto {
     enabled: boolean;
@@ -28,6 +30,8 @@ export interface CriterionConfigDto {
     maxPoints: number;
     weight: number;
     sortOrder: number;
+    peerReviewConfig?: PeerReviewConfigDto;
+    peerReviewConfigRequest?: PeerReviewConfigRequest;
 }
 
 export interface CriterionGradeEntryDto {

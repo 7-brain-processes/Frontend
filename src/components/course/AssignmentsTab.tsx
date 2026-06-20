@@ -6,6 +6,7 @@ import { categoryService, multiCriteriaGradingService, postsService, solutionsSe
 import { FormControl, FormControlLabel, MenuItem, Select, Switch } from "@mui/material";
 import { TeamRequirementTemplateDto } from '../../types/TeamRequirementTemplate';
 import { CriteriaGradeResultDto, CriterionConfigDto, CriterionType, UpsertGradingConfigRequest } from '../../types/Criterion';
+import { PeerReviewConfigRequest, PeerReviewReviewMode, PeerReviewScoringStrategy, PeerReviewUsageType } from '../../types/Peer2peer';
 
 const generateTemplateName = () => {
   const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -217,6 +218,24 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     }));
   };
 
+  const updatePeerReviewConfig = (index: number, field: keyof PeerReviewConfigRequest, value: string | number | PeerReviewReviewMode | PeerReviewUsageType | PeerReviewScoringStrategy) => {
+    setGradingConfigForm(prev => ({
+      ...prev,
+      criteria: prev.criteria.map((criterion, criterionIndex) =>
+        criterionIndex === index
+          ? ({
+            ...criterion,
+            peerReviewConfigRequest: {
+              ...(criterion.peerReviewConfigRequest || {}),
+              [field]: value
+            }
+          } as CriterionConfigDto)
+          : criterion
+      ),
+    }));
+  };
+
+
   const addCriterion = () => {
     setGradingConfigForm(prev => ({
       ...prev,
@@ -229,6 +248,16 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
           maxPoints: 0,
           weight: 0,
           sortOrder: prev.criteria.length,
+          peerReviewConfigRequest: {
+            reviewersCount: 0,
+            scoringStrategy: 'AVERAGE',
+            firstDeadline: new Date(),
+            secondDeadline: new Date(),
+            redistributionFactor: 0,
+            missedReviewPenalty: 0,
+            reviewMode: 'ONE_TO_ONE',
+            usageType: 'CRITERION'
+          }
         },
       ],
     }));
@@ -1125,6 +1154,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                           <option value="PERCENTAGE">Проценты</option>
                           <option value="POINTS">Баллы</option>
                           <option value="YES_NO">Да / нет</option>
+                          <option value="PEER_REVIEW">Проверка студентом (peer-to-peer)</option>
                         </select>
                       </div>
                       <div className="form-group" style={{ marginBottom: 0 }}>
@@ -1155,6 +1185,95 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                         />
                       </div>
                     </div>
+                    {
+                      criterion.type === 'PEER_REVIEW' &&
+                      <div style={criteriaGridStyle}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label htmlFor={`criterion-scoring-strategy-${index}`}>Стратегия подсчета очков</label>
+                          <select
+                            id={`criterion-scoring-strategy-${index}`}
+                            value={criterion.peerReviewConfigRequest?.scoringStrategy}
+                            onChange={e => updatePeerReviewConfig(index, 'scoringStrategy', e.target.value as PeerReviewScoringStrategy)}
+                            style={gradingModifierFieldStyle}
+                          >
+                            <option value="AVERAGE">Среднее</option>
+                            <option value="MIN">Минимальное</option>
+                            <option value="MAX">Максимальное</option>
+                          </select>
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label htmlFor={`criterion-first-deadline-${index}`}>Первый дедлайн</label>
+                          <input
+                            id={`criterion-first-deadline-${index}`}
+                            type="date"
+                            value={criterion.peerReviewConfigRequest?.firstDeadline.toISOString()}
+                            onChange={e => updatePeerReviewConfig(index, 'firstDeadline', e.target.value)}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label htmlFor={`criterion-second-deadline-${index}`}>Второй дедлайн</label>
+                          <input
+                            id={`criterion-second-deadline-${index}`}
+                            type="date"
+                            value={criterion.peerReviewConfigRequest?.secondDeadline.toISOString()}
+                            onChange={e => updatePeerReviewConfig(index, 'secondDeadline', e.target.value)}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label htmlFor={`criterion-redistribution-${index}`}>Фактор перераспределения</label>
+                          <input
+                            id={`criterion-redistribution-${index}`}
+                            type="number"
+                            value={criterion.peerReviewConfigRequest?.redistributionFactor}
+                            onChange={e => updatePeerReviewConfig(index, 'redistributionFactor', Number(e.target.value))}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label htmlFor={`criterion-penalty-${index}`}>Штраф за пропущенный просмотр</label>
+                          <input
+                            id={`criterion-penalty-${index}`}
+                            type="number"
+                            value={criterion.peerReviewConfigRequest?.missedReviewPenalty}
+                            onChange={e => updatePeerReviewConfig(index, 'missedReviewPenalty', Number(e.target.value))}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label htmlFor={`criterion-review-mode-${index}`}>Режим проверки</label>
+                          <select
+                            id={`criterion-review-mode-${index}`}
+                            value={criterion.peerReviewConfigRequest?.reviewMode}
+                            onChange={e => updatePeerReviewConfig(index, 'reviewMode', e.target.value as PeerReviewReviewMode)}
+                            style={gradingModifierFieldStyle}
+                          >
+                            <option value="ONE_TO_ONE">Один к одному</option>
+                            <option value="MANY_TO_ONE">Многие к одному</option>
+                          </select>
+                        </div>
+                        {criterion.peerReviewConfigRequest?.reviewMode === 'MANY_TO_ONE' &&
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label htmlFor={`criterion-reviewers-count-${index}`}>Количество проверяющих</label>
+                            <input
+                              id={`criterion-reviewers-count-${index}`}
+                              type="number"
+                              value={criterion.peerReviewConfigRequest?.reviewersCount}
+                              onChange={e => updatePeerReviewConfig(index, 'reviewersCount', Number(e.target.value))}
+                            />
+                          </div>
+                        }
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label htmlFor={`criterion-usage-type-${index}`}>Тип использования</label>
+                          <select
+                            id={`criterion-usage-type-${index}`}
+                            value={criterion.peerReviewConfigRequest?.usageType}
+                            onChange={e => updatePeerReviewConfig(index, 'usageType', e.target.value as PeerReviewUsageType)}
+                            style={gradingModifierFieldStyle}
+                          >
+                            <option value="CRITERION">Критерий</option>
+                            <option value="SEPARATE_GRADE">Отдельная оценка</option>
+                          </select>
+                        </div>
+                      </div>
+                    }
                   </div>
                 ))}
                 <button type="button" className="button-secondary" onClick={addCriterion}>
