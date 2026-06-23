@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { authService, postsService, solutionsService, teamFormationService, teamGradesService, teamInvitationsService, teamsService } from "../../../api/services";
+import { authService, multiCriteriaGradingService, postsService, solutionsService, teamFormationService, teamGradesService, teamInvitationsService, teamsService } from "../../../api/services";
 import { listSolutionFiles, downloadSolutionFile, deleteSolution } from "../../../api/solutions";
 import {
     AutoTeamFormationRequest,
@@ -22,6 +22,11 @@ import {
     UserDto,
     CaptainStudentGradeEntry,
 } from "../../../types/api";
+import {
+    CriterionGradeEntryDto,
+    CriteriaGradeResultDto,
+    GradingConfigDto,
+} from "../../../types/Criterion";
 import { translateApiMessage } from "../../../utils/translateApiMessage";
 
 type TeamsErrorCode = '403' | '404' | 'generic' | null;
@@ -138,6 +143,14 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [selectedSolution, setSelectedSolution] = useState<SolutionDto | null>(null);
     const [gradeValue, setGradeValue] = useState<number>(0);
     const [gradeComment, setGradeComment] = useState<string>('');
+    const [hasCriteriaGrading, setHasCriteriaGrading] = useState(false);
+    const [criteriaGradingConfig, setCriteriaGradingConfig] = useState<GradingConfigDto | null>(null);
+    const [criteriaGradeEntries, setCriteriaGradeEntries] = useState<CriterionGradeEntryDto[]>([]);
+    const [criteriaGradeResult, setCriteriaGradeResult] = useState<CriteriaGradeResultDto | null>(null);
+    const [criteriaGradesBySolutionId, setCriteriaGradesBySolutionId] = useState<Record<string, CriteriaGradeResultDto>>({});
+    const [criteriaGradeLoading, setCriteriaGradeLoading] = useState(false);
+    const [criteriaGradeSaving, setCriteriaGradeSaving] = useState(false);
+    const [criteriaGradeError, setCriteriaGradeError] = useState<string | null>(null);
     const [solutionComments, setSolutionComments] = useState<Record<string, CommentDto[]>>({});
     const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
     const [submittingCommentId, setSubmittingCommentId] = useState<string | null>(null);
@@ -224,6 +237,32 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         setMyTeamGrade(null);
         setMyTeamGradeLoading(false);
         setMyTeamGradeError(null);
+    };
+
+    const createEmptyCriteriaEntries = (config: GradingConfigDto | null): CriterionGradeEntryDto[] => {
+        if (!config?.criteria?.length) {
+            return [];
+        }
+
+        return [...config.criteria]
+            .sort((left, right) => left.sortOrder - right.sortOrder)
+            .map((criterion) => ({
+                criterionId: criterion.id,
+                value: 0,
+                comment: '',
+            }));
+    };
+
+    const getCriterionMaxValue = (criterion: GradingConfigDto['criteria'][number]): number => {
+        if (criterion.type === 'YES_NO') {
+            return 1;
+        }
+
+        if (criterion.type === 'PERCENTAGE') {
+            return 100;
+        }
+
+        return criterion.maxPoints;
     };
 
     const getTeamsErrorCode = (err: any): Exclude<TeamsErrorCode, null> => {
@@ -477,6 +516,24 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             ]);
             setTask(data);
             setCurrentUser(authUser);
+            let criteriaEnabledForTask = false;
+            try {
+                const gradingConfig = await multiCriteriaGradingService.getGradingConfig(courseId, taskId);
+                const hasCriteria = Array.isArray(gradingConfig?.criteria) && gradingConfig.criteria.length > 0;
+                criteriaEnabledForTask = hasCriteria;
+                setHasCriteriaGrading(hasCriteria);
+                setCriteriaGradingConfig(hasCriteria ? gradingConfig : null);
+                setCriteriaGradeEntries(createEmptyCriteriaEntries(hasCriteria ? gradingConfig : null));
+                setCriteriaGradeResult(null);
+                setCriteriaGradeError(null);
+            } catch (err) {
+                criteriaEnabledForTask = false;
+                setHasCriteriaGrading(false);
+                setCriteriaGradingConfig(null);
+                setCriteriaGradeEntries([]);
+                setCriteriaGradeResult(null);
+                setCriteriaGradeError(null);
+            }
             console.log('[TaskDetail] teamFormationMode', {
                 courseId,
                 taskId,
@@ -566,7 +623,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                     resetCaptainsState();
                 }
                 resetGradeVoteState();
-                await loadSolutions();
+                await loadSolutions(criteriaEnabledForTask);
             }
         } catch (err: any) {
             console.error('Failed to load task:', err);
@@ -848,7 +905,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         }
     };
 
-    const loadSolutions = async () => {
+    const loadSolutions = async (criteriaEnabled: boolean = hasCriteriaGrading) => {
         if (!courseId || !taskId || userRole !== 'TEACHER') return;
 
         try {
@@ -857,6 +914,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
 
             const filesMap: Record<string, FileDto[]> = {};
             const commentsMap: Record<string, CommentDto[]> = {};
+            const criteriaGradesMap: Record<string, CriteriaGradeResultDto> = {};
 
             for (const solution of response.content) {
                 if (solution.filesCount > 0) {
@@ -872,15 +930,29 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                 }
 
                 commentsMap[solution.id] = await loadCommentsForSolution(solution.id);
+
+                if (criteriaEnabled) {
+                    try {
+                        criteriaGradesMap[solution.id] = await multiCriteriaGradingService.getGradeDecomposition(courseId, taskId, solution.id);
+                    } catch {
+                        try {
+                            criteriaGradesMap[solution.id] = await multiCriteriaGradingService.getCriteriaGrades(courseId, taskId, solution.id);
+                        } catch (err) {
+                            console.error(`Failed to load criteria grade for solution ${solution.id}:`, err);
+                        }
+                    }
+                }
             }
 
             setSolutionFiles(filesMap);
             setSolutionComments(commentsMap);
+            setCriteriaGradesBySolutionId(criteriaEnabled ? criteriaGradesMap : {});
         } catch (err: any) {
             console.error('Failed to load solutions:', err);
             setSolutions([]);
             setSolutionFiles({});
             setSolutionComments({});
+            setCriteriaGradesBySolutionId({});
         }
     };
 
@@ -967,14 +1039,170 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     };
 
     const handleOpenGradeModal = (solution: SolutionDto) => {
+        console.log('[TaskDetail] handleOpenGradeModal called', {
+            courseId,
+            taskId,
+            solutionId: solution.id,
+            studentId: solution.student.id,
+            currentGrade: solution.grade,
+            hasCriteriaGrading,
+        });
+        if (hasCriteriaGrading) {
+            console.log('[TaskDetail] blocking legacy grade submit because criteria grading is enabled', {
+                courseId,
+                taskId,
+                solutionId: selectedSolution?.id ?? null,
+                gradeValue,
+                gradeComment,
+            });
+            console.log('[TaskDetail] blocking legacy grade modal because criteria grading is enabled', {
+                courseId,
+                taskId,
+                solutionId: solution.id,
+            });
+            alert('Для этого задания включено оценивание по критериям. Старая оценка решения недоступна.');
+            return;
+        }
         setSelectedSolution(solution);
         setGradeValue(solution.grade || 0);
         setGradeComment('');
         setShowGradeModal(true);
     };
 
+    const handleOpenCriteriaGradeModal = async (solution: SolutionDto) => {
+        console.log('[TaskDetail] handleOpenCriteriaGradeModal called', {
+            courseId,
+            taskId,
+            solutionId: solution.id,
+            studentId: solution.student.id,
+            hasCriteriaGrading,
+        });
+
+        setSelectedSolution(solution);
+        setCriteriaGradeError(null);
+        setCriteriaGradeResult(null);
+        setCriteriaGradeEntries(createEmptyCriteriaEntries(criteriaGradingConfig));
+        setShowGradeModal(true);
+
+        if (!courseId || !taskId || !criteriaGradingConfig) {
+            return;
+        }
+
+        try {
+            setCriteriaGradeLoading(true);
+            const result = await multiCriteriaGradingService.getCriteriaGrades(courseId, taskId, solution.id);
+            setCriteriaGradeResult(result);
+            setCriteriaGradeEntries(
+                [...result.criteriaGrades]
+                    .sort((left, right) => left.criterion.sortOrder - right.criterion.sortOrder)
+                    .map((item) => ({
+                        criterionId: item.criterion.id,
+                        value: item.value,
+                        comment: item.comment || '',
+                    }))
+            );
+        } catch (err: any) {
+            const message = String(err?.message || '').toLowerCase();
+            if (!message.includes('404') && !message.includes('not found')) {
+                console.error('Failed to load criteria grades:', err);
+                setCriteriaGradeError(translateApiMessage(err.message, 'Ошибка загрузки оценок по критериям'));
+            }
+        } finally {
+            setCriteriaGradeLoading(false);
+        }
+    };
+
+    const handleCriteriaGradeEntryChange = (criterionId: string, field: 'value' | 'comment', value: string) => {
+        setCriteriaGradeEntries((prev) =>
+            prev.map((entry) =>
+                entry.criterionId === criterionId
+                    ? {
+                        ...entry,
+                        [field]: field === 'value' ? Number(value) : value,
+                    }
+                    : entry
+            )
+        );
+    };
+
+    const handleSaveCriteriaGrades = async () => {
+        if (!courseId || !taskId || !selectedSolution || !criteriaGradingConfig) return;
+
+        const sortedCriteria = [...criteriaGradingConfig.criteria].sort((left, right) => left.sortOrder - right.sortOrder);
+        const payloadEntries: CriterionGradeEntryDto[] = [];
+
+        for (const criterion of sortedCriteria) {
+            const entry = criteriaGradeEntries.find((item) => item.criterionId === criterion.id);
+            const value = Number(entry?.value ?? 0);
+            const maxValue = getCriterionMaxValue(criterion);
+
+            if (!Number.isFinite(value) || value < 0 || value > maxValue) {
+                alert(`Значение для критерия "${criterion.title}" должно быть в диапазоне 0..${maxValue}`);
+                return;
+            }
+
+            payloadEntries.push({
+                criterionId: criterion.id,
+                value,
+                comment: entry?.comment?.trim() ? entry.comment.trim() : undefined,
+            });
+        }
+
+        try {
+            setCriteriaGradeSaving(true);
+            setCriteriaGradeError(null);
+            console.log('[TaskDetail] sending criteria grade request', {
+                endpoint: `/courses/${courseId}/posts/${taskId}/solutions/${selectedSolution.id}/criteria-grades`,
+                payload: { grades: payloadEntries },
+                criteriaCount: payloadEntries.length,
+                maxGrade: criteriaGradingConfig.maxGrade,
+            });
+
+            const result = await multiCriteriaGradingService.upsertCriteriaGrades(courseId, taskId, selectedSolution.id, {
+                grades: payloadEntries,
+            });
+
+            console.log('[TaskDetail] criteria grade request succeeded', {
+                courseId,
+                taskId,
+                solutionId: selectedSolution.id,
+                finalScore: result.finalScore,
+                basicScore: result.basicScore,
+                maxGrade: result.maxGrade,
+            });
+
+            setCriteriaGradeResult(result);
+            window.location.reload();
+        } catch (err: any) {
+            console.error('Failed to save criteria grades:', err);
+            console.log('[TaskDetail] criteria grade request failed', {
+                courseId,
+                taskId,
+                solutionId: selectedSolution?.id ?? null,
+                errorMessage: err?.message ?? null,
+                error: err,
+            });
+            setCriteriaGradeError(translateApiMessage(err.message, 'Ошибка выставления оценки по критериям'));
+        } finally {
+            setCriteriaGradeSaving(false);
+        }
+    };
+
     const handleGradeSolution = async () => {
+        console.log('[TaskDetail] handleGradeSolution called', {
+            courseId,
+            taskId,
+            solutionId: selectedSolution?.id ?? null,
+            studentId: selectedSolution?.student?.id ?? null,
+            gradeValue,
+            gradeComment,
+            hasCriteriaGrading,
+        });
         if (!courseId || !taskId || !selectedSolution) return;
+        if (hasCriteriaGrading) {
+            alert('Для этого задания включено оценивание по критериям. Старая оценка решения недоступна.');
+            return;
+        }
 
         if (!Number.isFinite(gradeValue) || gradeValue < 0 || gradeValue > 100) {
             alert('Оценка должна быть в диапазоне 0..100');
@@ -987,24 +1215,51 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         }
 
         try {
+            console.log('[TaskDetail] sending legacy grade request', {
+                endpoint: `/courses/${courseId}/posts/${taskId}/solutions/${selectedSolution.id}/grade`,
+                payload: {
+                    grade: gradeValue,
+                    comment: gradeComment.trim() || undefined,
+                },
+            });
             await solutionsService.gradeSolution(courseId, taskId, selectedSolution.id, {
                 grade: gradeValue,
                 comment: gradeComment.trim() || undefined,
+            });
+
+            console.log('[TaskDetail] legacy grade request succeeded', {
+                courseId,
+                taskId,
+                solutionId: selectedSolution.id,
+                gradeValue,
+                gradeComment,
             });
 
             await loadSolutions();
             setShowGradeModal(false);
             setSelectedSolution(null);
             setGradeComment('');
-            window.location.reload();
         } catch (err: any) {
             console.error('Failed to grade solution:', err);
+            console.log('[TaskDetail] legacy grade request failed', {
+                courseId,
+                taskId,
+                solutionId: selectedSolution?.id ?? null,
+                gradeValue,
+                gradeComment,
+                errorMessage: err?.message ?? null,
+                error: err,
+            });
             alert(translateApiMessage(err.message, 'Ошибка выставления оценки'));
         }
     };
 
     const handleRemoveGrade = async () => {
         if (!courseId || !taskId || !selectedSolution) return;
+        if (hasCriteriaGrading) {
+            alert('Для этого задания включено оценивание по критериям. Старая оценка решения недоступна.');
+            return;
+        }
 
         try {
             await solutionsService.removeGrade(courseId, taskId, selectedSolution.id);
@@ -1013,7 +1268,6 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setShowGradeModal(false);
             setSelectedSolution(null);
             setGradeComment('');
-            window.location.reload();
         } catch (err: any) {
             console.error('Failed to remove grade:', err);
             alert(translateApiMessage(err.message, 'Ошибка снятия оценки'));
@@ -1168,6 +1422,14 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             selectedSolution,
             gradeValue,
             gradeComment,
+            hasCriteriaGrading,
+            criteriaGradingConfig,
+            criteriaGradeEntries,
+            criteriaGradeResult,
+            criteriaGradesBySolutionId,
+            criteriaGradeLoading,
+            criteriaGradeSaving,
+            criteriaGradeError,
             solutionComments,
             commentInputs,
             submittingCommentId,
@@ -1179,10 +1441,13 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setGradeValue,
             setGradeComment,
             setShowGradeModal,
+            handleOpenCriteriaGradeModal,
+            handleCriteriaGradeEntryChange,
             handleSubmitSolution,
             handleOpenGradeModal,
             handleGradeSolution,
             handleRemoveGrade,
+            handleSaveCriteriaGrades,
             handleCommentInputChange,
             handleCreateSolutionComment,
             handleFileSelect,

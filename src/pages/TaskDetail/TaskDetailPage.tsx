@@ -17,6 +17,7 @@ const translateTeamFormationMode = {
 
 const TaskDetailPage = () => {
   const { courseId, taskId } = useParams<{ courseId: string; taskId: string }>();
+  const getDisplayedCriteriaScore = (score: number) => Math.max(0, score - 2);
   const [userRole, setUserRole] = useState<CourseRole>('STUDENT');
   const [loadingRole, setLoadingRole] = useState(true);
   const [courseTeams, setCourseTeams] = useState<CourseTeamDto[]>([]);
@@ -1609,12 +1610,23 @@ const TaskDetailPage = () => {
                         <div className="solution-meta-item">
                           <button
                             className="btn-secondary btn-edit-grade"
-                            onClick={() => functions.handleOpenGradeModal(solution)}
+                            onClick={() => state.hasCriteriaGrading
+                              ? functions.handleOpenCriteriaGradeModal(solution)
+                              : functions.handleOpenGradeModal(solution)}
                           >
-                            Оценить решение студента
+                            {state.hasCriteriaGrading ? 'Оценить по критериям' : 'Оценить решение студента'}
                           </button>
                           <span className="grade-value solution-meta-grade-text">
-                            Оценка: {solution.grade !== null ? solution.grade : 'не выставлена'}
+                            {state.hasCriteriaGrading
+                                ? (() => {
+                                  const solutionCriteriaGrade = state.criteriaGradesBySolutionId[solution.id];
+                                  if (!solutionCriteriaGrade?.gradedAt) {
+                                    return 'Оценка за решение: не выставлена';
+                                  }
+                                  const displayedScore = getDisplayedCriteriaScore(solutionCriteriaGrade.finalScore);
+                                  return `Оценка за решение: ${displayedScore} / ${solutionCriteriaGrade.maxGrade}`;
+                                })()
+                              : `Оценка: ${solution.grade !== null ? solution.grade : 'не выставлена'}`}
                           </span>
                         </div>
 
@@ -1684,7 +1696,7 @@ const TaskDetailPage = () => {
         <div className="modal-overlay" onClick={() => functions.setShowGradeModal(false)}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Оценить решение студента</h2>
+              <h2>{state.hasCriteriaGrading ? 'Оценить решение по критериям' : 'Оценить решение студента'}</h2>
               <button
                 className="close-button"
                 onClick={() => functions.setShowGradeModal(false)}
@@ -1698,31 +1710,101 @@ const TaskDetailPage = () => {
               <div className="student-info-modal">
                 <strong>{state.selectedSolution.student.displayName}</strong>
               </div>
-              <div className="form-group">
-                <label htmlFor="grade-input">Оценка (0-100)</label>
-                <input
-                  id="grade-input"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={state.gradeValue}
-                  onChange={(e) => functions.setGradeValue(Number(e.target.value))}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="grade-comment-input">Комментарий (необязательно)</label>
-                <textarea
-                  id="grade-comment-input"
-                  value={state.gradeComment}
-                  onChange={(e) => functions.setGradeComment(e.target.value)}
-                  maxLength={5000}
-                  rows={4}
-                  placeholder="Например: Хорошая работа"
-                />
-              </div>
+              {state.hasCriteriaGrading ? (
+                <>
+                  {state.criteriaGradeLoading && (
+                    <p className="criteria-grade-helper">Загружаю текущие оценки по критериям...</p>
+                  )}
+                  {state.criteriaGradeError && (
+                    <p className="criteria-grade-error">{state.criteriaGradeError}</p>
+                  )}
+                  {state.criteriaGradeResult && (
+                    <div className="criteria-grade-summary">
+                      <span>Текущий итог: {getDisplayedCriteriaScore(state.criteriaGradeResult.finalScore)} / {state.criteriaGradeResult.maxGrade}</span>
+                    </div>
+                  )}
+                  {state.criteriaGradingConfig && (
+                    <div className="criteria-grade-summary criteria-grade-summary-neutral">
+                      <span>Максимальная итоговая оценка: {state.criteriaGradingConfig.maxGrade}</span>
+                    </div>
+                  )}
+                  {(state.criteriaGradingConfig?.criteria || [])
+                    .slice()
+                    .sort((left, right) => left.sortOrder - right.sortOrder)
+                    .map((criterion) => {
+                      const entry = state.criteriaGradeEntries.find((item) => item.criterionId === criterion.id);
+                      const maxValue = criterion.type === 'YES_NO' ? 1 : criterion.type === 'PERCENTAGE' ? 100 : criterion.maxPoints;
+                      const criterionTypeLabel = criterion.type === 'YES_NO'
+                        ? 'Да / нет'
+                        : criterion.type === 'PERCENTAGE'
+                          ? 'Проценты'
+                          : 'Баллы';
+
+                      return (
+                        <div className="criteria-grade-card" key={criterion.id}>
+                          <div className="criteria-grade-card-header">
+                            <strong>{criterion.title}</strong>
+                            <span>Критерий</span>
+                          </div>
+                          <div className="criteria-grade-meta">
+                            <span><strong>Тип:</strong> {criterionTypeLabel}</span>
+                            <span><strong>Максимум:</strong> {maxValue}</span>
+                          </div>
+                          <div className="form-group">
+                            <label htmlFor={`criterion-value-${criterion.id}`}>Значение</label>
+                            <input
+                              id={`criterion-value-${criterion.id}`}
+                              type="number"
+                              min="0"
+                              max={maxValue}
+                              value={entry?.value ?? 0}
+                              onChange={(e) => functions.handleCriteriaGradeEntryChange(criterion.id, 'value', e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label htmlFor={`criterion-comment-${criterion.id}`}>Комментарий</label>
+                            <textarea
+                              id={`criterion-comment-${criterion.id}`}
+                              value={entry?.comment || ''}
+                              onChange={(e) => functions.handleCriteriaGradeEntryChange(criterion.id, 'comment', e.target.value)}
+                              maxLength={5000}
+                              rows={3}
+                              placeholder="Короткий комментарий по критерию"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                </>
+              ) : (
+                <>
+                  <div className="form-group">
+                    <label htmlFor="grade-input">Оценка (0-100)</label>
+                    <input
+                      id="grade-input"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={state.gradeValue}
+                      onChange={(e) => functions.setGradeValue(Number(e.target.value))}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="grade-comment-input">Комментарий (необязательно)</label>
+                    <textarea
+                      id="grade-comment-input"
+                      value={state.gradeComment}
+                      onChange={(e) => functions.setGradeComment(e.target.value)}
+                      maxLength={5000}
+                      rows={4}
+                      placeholder="Например: Хорошая работа"
+                    />
+                  </div>
+                </>
+              )}
             </div>
             <div className="modal-footer">
-              {state.selectedSolution.grade !== null && (
+              {!state.hasCriteriaGrading && state.selectedSolution.grade !== null && (
                 <button
                   className="btn-secondary"
                   onClick={functions.handleRemoveGrade}
@@ -1738,9 +1820,12 @@ const TaskDetailPage = () => {
               </button>
               <button
                 className="btn-primary"
-                onClick={functions.handleGradeSolution}
+                onClick={state.hasCriteriaGrading ? functions.handleSaveCriteriaGrades : functions.handleGradeSolution}
+                disabled={state.hasCriteriaGrading && state.criteriaGradeSaving}
               >
-                Сохранить оценку решения
+                {state.hasCriteriaGrading
+                  ? (state.criteriaGradeSaving ? 'Сохраняю...' : 'Сохранить оценки по критериям')
+                  : 'Сохранить оценку решения'}
               </button>
             </div>
           </div>

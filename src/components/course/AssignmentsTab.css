@@ -1175,3 +1175,10 @@
   font-size: 15px !important;
 }
 
+.grading-section-description {
+  margin: -2px 0 16px !important;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5f6368;
+}
+

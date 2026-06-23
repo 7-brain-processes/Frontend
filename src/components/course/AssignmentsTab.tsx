@@ -31,16 +31,7 @@ const isGradingConfigUnsupportedError = (err: unknown): boolean => {
 
 const createInitialGradingConfig = (): UpsertGradingConfigRequest => ({
   maxGrade: 0,
-  criteria: [
-    {
-      id: '',
-      type: 'PERCENTAGE',
-      title: '',
-      maxPoints: 0,
-      weight: 0,
-      sortOrder: 0,
-    },
-  ],
+  criteria: [],
   modifiers: {
     deadlines: {
       enabled: false,
@@ -72,10 +63,11 @@ const normalizeGradingConfig = (
   gradingConfig?: Partial<UpsertGradingConfigRequest> | null
 ): UpsertGradingConfigRequest => {
   const initialConfig = createInitialGradingConfig();
+  const criteria = Array.isArray(gradingConfig?.criteria) ? gradingConfig?.criteria ?? [] : initialConfig.criteria;
 
   return {
     maxGrade: gradingConfig?.maxGrade ?? initialConfig.maxGrade,
-    criteria: gradingConfig?.criteria?.length ? gradingConfig.criteria : initialConfig.criteria,
+    criteria,
     modifiers: {
       deadlines: {
         ...initialConfig.modifiers.deadlines,
@@ -98,8 +90,20 @@ const normalizeGradingConfig = (
   };
 };
 
+const buildGradingConfigPayload = (gradingConfig: UpsertGradingConfigRequest): UpsertGradingConfigRequest => ({
+  ...gradingConfig,
+  modifiers: {
+    ...gradingConfig.modifiers,
+    contributionVoting: {
+      enabled: false,
+      description: '',
+    },
+  },
+});
+
 export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabProps) {
   const navigate = useNavigate();
+  const getDisplayedCriteriaScore = (score: number) => Math.max(0, score - 2);
   type TeamFormationModeValue = PostDto['teamFormationMode'] | '';
   const [assignments, setAssignments] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,9 +135,9 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   const [enabledDeadlines, setEnabledDeadlines] = useState<boolean>(true);
   const [enabledTeamSize, setEnabledTeamSize] = useState<boolean>(true);
   const [enabledProgressRegularity, setEnabledProgressRegularity] = useState<boolean>(true);
-  const [enabledContributionVoting, setEnabledContributionVoting] = useState<boolean>(true);
 
   const [myGrade, setMyGrade] = useState<CriteriaGradeResultDto | null>(null);
+  const [selectedAssignmentHasCriteria, setSelectedAssignmentHasCriteria] = useState(false);
   const gradingModifierCardStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
@@ -240,9 +244,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
 
       return {
         ...prev,
-        criteria: nextCriteria.length
-          ? nextCriteria.map((criterion, criterionIndex) => ({ ...criterion, sortOrder: criterionIndex }))
-          : createInitialGradingConfig().criteria,
+        criteria: nextCriteria.map((criterion, criterionIndex) => ({ ...criterion, sortOrder: criterionIndex })),
       };
     });
   };
@@ -251,6 +253,34 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     loadAssignments();
     loadCategoriesFunc();
   }, [courseId]);
+
+  useEffect(() => {
+    if (!selectedAssignment) {
+      setSelectedAssignmentHasCriteria(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadSelectedAssignmentGradingConfig = async () => {
+      try {
+        const gradingConfig = await multiCriteriaGradingService.getGradingConfig(courseId, selectedAssignment.id);
+        if (!cancelled) {
+          setSelectedAssignmentHasCriteria(Array.isArray(gradingConfig?.criteria) && gradingConfig.criteria.length > 0);
+        }
+      } catch {
+        if (!cancelled) {
+          setSelectedAssignmentHasCriteria(false);
+        }
+      }
+    };
+
+    loadSelectedAssignmentGradingConfig();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, selectedAssignment]);
 
   const toDateTimeLocal = (isoString: string | undefined | null): string => {
     if (!isoString) return '';
@@ -371,15 +401,56 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
 
   const handleGradeSolution = async (solutionId: string, grade: number | null) => {
     if (!selectedAssignment || userRole !== 'TEACHER') return;
+    console.log('[AssignmentsTab] handleGradeSolution called', {
+      courseId,
+      assignmentId: selectedAssignment.id,
+      assignmentTitle: selectedAssignment.title,
+      solutionId,
+      grade,
+      userRole,
+      selectedAssignmentHasCriteria,
+      gradingConfigMaxGrade: gradingConfigForm.maxGrade,
+      gradingConfigCriteriaCount: gradingConfigForm.criteria.length,
+      gradingConfigCriteria: gradingConfigForm.criteria,
+    });
+    if (selectedAssignmentHasCriteria) {
+      console.log('[AssignmentsTab] legacy grade blocked because criteria grading is enabled', {
+        courseId,
+        assignmentId: selectedAssignment.id,
+        solutionId,
+        grade,
+      });
+      alert('Для этого задания включено оценивание по критериям. Старая оценка решения недоступна.');
+      return;
+    }
 
     try {
+      console.log('[AssignmentsTab] sending legacy grade request', {
+        endpoint: `/courses/${courseId}/posts/${selectedAssignment.id}/solutions/${solutionId}/grade`,
+        payload: { grade },
+      });
       await solutionsService.gradeSolution(courseId, selectedAssignment.id, solutionId, {
+        grade,
+      });
+
+      console.log('[AssignmentsTab] legacy grade request succeeded', {
+        courseId,
+        assignmentId: selectedAssignment.id,
+        solutionId,
         grade,
       });
 
       await loadSolutions(selectedAssignment.id);
     } catch (err: any) {
       console.error('Failed to grade solution:', err);
+      console.log('[AssignmentsTab] legacy grade request failed', {
+        courseId,
+        assignmentId: selectedAssignment.id,
+        solutionId,
+        grade,
+        errorMessage: err?.message ?? null,
+        error: err,
+      });
       alert(err.message || 'Ошибка выставления оценки');
     }
   };
@@ -389,7 +460,6 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     setAssignmentForm({ title: '', content: '', deadline: '', teamFormationMode: '' });
     setGradingConfigForm(createInitialGradingConfig());
     setEnabledParameters(true);
-    setEnabledContributionVoting(false);
     setEnabledTeamSize(false);
     setEnabledProgressRegularity(false);
     setEnabledDeadlines(false);
@@ -411,7 +481,6 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       const normalizedConfig = normalizeGradingConfig(gradingConfig);
       setGradingConfigForm(normalizedConfig);
       setEnabledParameters(true);
-      setEnabledContributionVoting(normalizedConfig.modifiers.contributionVoting.enabled);
       setEnabledTeamSize(normalizedConfig.modifiers.teamSize.enabled);
       setEnabledProgressRegularity(normalizedConfig.modifiers.progressRegularity.enabled);
       setEnabledDeadlines(normalizedConfig.modifiers.deadlines.enabled);
@@ -467,10 +536,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
   const saveGradingConfigIfSupported = async (postId: string) => {
     try {
       await multiCriteriaGradingService.upsertGradingConfig(courseId, postId, {
-        maxGrade: gradingConfigForm.maxGrade,
-        criteria: gradingConfigForm.criteria,
-        modifiers: gradingConfigForm.modifiers,
-        resultsVisible: gradingConfigForm.resultsVisible
+        ...buildGradingConfigPayload(gradingConfigForm),
       });
     } catch (err) {
       if (isGradingConfigUnsupportedError(err)) {
@@ -479,6 +545,19 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
       }
 
       throw err;
+    }
+  };
+
+  const saveGradingConfigWithoutBreakingAssignment = async (postId: string) => {
+    try {
+      if (gradingConfigForm.criteria.length > 0) {
+        await saveGradingConfigIfSupported(postId);
+      } else {
+        await deleteGradingConfigIfSupported(postId);
+      }
+    } catch (err) {
+      console.error('Failed to save grading config:', err);
+      alert('Задание сохранено, но параметры и критерии сохранить не удалось');
     }
   };
 
@@ -517,7 +596,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
         });
         if (updatedPost) {
           if (enabledParameters) {
-            await saveGradingConfigIfSupported(updatedPost.id);
+            await saveGradingConfigWithoutBreakingAssignment(updatedPost.id);
           }
           else {
             await deleteGradingConfigIfSupported(updatedPost.id);
@@ -545,7 +624,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
         }
 
         if (newPost) {
-          await saveGradingConfigIfSupported(newPost.id);
+          await saveGradingConfigWithoutBreakingAssignment(newPost.id);
         }
 
         setAssignments([...assignments, newPost]);
@@ -596,6 +675,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
 
   const closeAssignment = () => {
     setSelectedAssignment(null);
+    setSelectedAssignmentHasCriteria(false);
     setMySolution(null);
     setSolutions([]);
     setShowSubmitForm(false);
@@ -688,7 +768,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
 
                 {mySolution.status === 'GRADED' && mySolution.grade !== undefined && (
                   <div className="solution-grade">
-                    <strong>Оценка:</strong> {myGrade?.finalScore} / {myGrade?.maxGrade}
+                    <strong>Оценка:</strong> {myGrade ? getDisplayedCriteriaScore(myGrade.finalScore) : null} / {myGrade?.maxGrade}
                     {mySolution.gradedAt && (
                       <span className="grade-date">
                         {new Date(mySolution.gradedAt).toLocaleDateString('ru-RU')}
@@ -815,7 +895,11 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                         )}
                       </div>
 
-                      {solution.status === 'GRADED' && solution.grade !== undefined ? (
+                      {selectedAssignmentHasCriteria ? (
+                        <div className="graded-info">
+                          <strong>Для этого задания используется оценивание по критериям</strong>
+                        </div>
+                      ) : solution.status === 'GRADED' && solution.grade !== undefined ? (
                         <div className="graded-info">
                           <strong>Оценка: {solution.grade} / 100</strong>
                           {solution.gradedAt && (
@@ -1094,8 +1178,13 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                 />
               </div>
               <div>
-                <h2>Модификаторы</h2>
-                <h2>{'Критерии оценивания'}</h2>
+                <h2>Критерии оценивания</h2>
+                
+                {gradingConfigForm.criteria.length === 0 && (
+                  <p className="grading-section-description">
+                    Критерии пока не добавлены.
+                  </p>
+                )}
                 {gradingConfigForm.criteria.map((criterion, index) => (
                   <div key={`criterion-${index}`} style={criterionCardStyle}>
                     <div style={criterionHeaderStyle}>
@@ -1162,73 +1251,8 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                 </button>
               </div>
               <div>
-                <h2>{'Модификаторы'}</h2>
-                <div className="grading-modifier-card" style={gradingModifierCardStyle}>
-                  <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
-                    <h2>Голосование за вклад</h2>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={enabledContributionVoting}
-                          onChange={(_, checked) => setEnabledContributionVoting(checked)}
-                          color="primary"
-                        />
-                      }
-                      label=""
-                    />
-                  </div>
-                  <textarea
-                    id="assignment-content"
-                    style={gradingModifierFieldStyle}
-                    value={gradingConfigForm.modifiers.contributionVoting.description}
-                    onChange={e => setGradingConfigForm({
-                      ...gradingConfigForm,
-                      modifiers: {
-                        ...gradingConfigForm.modifiers,
-                        contributionVoting: {
-                          ...gradingConfigForm.modifiers.contributionVoting,
-                          description: e.target.value
-                        }
-                      }
-                    })}
-                    placeholder="Введите описание"
-                    rows={5}
-                    data-testid="assignment-content-input"
-                  />
-                </div>
-                <div className="grading-modifier-card" style={gradingModifierCardStyle}>
-                  <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
-                    <h2>Размер команды</h2>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={enabledTeamSize}
-                          onChange={(_, checked) => setEnabledTeamSize(checked)}
-                          color="primary"
-                        />
-                      }
-                      label=""
-                    />
-                  </div>
-                  <textarea
-                    id="assignment-content"
-                    style={gradingModifierFieldStyle}
-                    value={gradingConfigForm.modifiers.teamSize.formula}
-                    onChange={e => setGradingConfigForm({
-                      ...gradingConfigForm,
-                      modifiers: {
-                        ...gradingConfigForm.modifiers,
-                        teamSize: {
-                          ...gradingConfigForm.modifiers.teamSize,
-                          formula: e.target.value
-                        }
-                      }
-                    })}
-                    placeholder="Введите формулы подсчета"
-                    rows={5}
-                    data-testid="assignment-content-input"
-                  />
-                </div>
+                <h2>Модификаторы</h2>
+                
                 <div className="grading-modifier-card" style={gradingModifierCardStyle}>
                   <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
                     <h2>Прогресс регулярности</h2>
@@ -1408,6 +1432,43 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                       }
                     })}
                     placeholder="Введите максимальное количество дней штрафа за просрочку дедлайна"
+                    data-testid="assignment-content-input"
+                  />
+                </div>
+              </div>
+              <div>
+                <h2>Командная оценка</h2>
+                
+                <div className="grading-modifier-card" style={gradingModifierCardStyle}>
+                  <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
+                    <h2>Размер команды</h2>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={enabledTeamSize}
+                          onChange={(_, checked) => setEnabledTeamSize(checked)}
+                          color="primary"
+                        />
+                      }
+                      label=""
+                    />
+                  </div>
+                  <textarea
+                    id="assignment-content"
+                    style={gradingModifierFieldStyle}
+                    value={gradingConfigForm.modifiers.teamSize.formula}
+                    onChange={e => setGradingConfigForm({
+                      ...gradingConfigForm,
+                      modifiers: {
+                        ...gradingConfigForm.modifiers,
+                        teamSize: {
+                          ...gradingConfigForm.modifiers.teamSize,
+                          formula: e.target.value
+                        }
+                      }
+                    })}
+                    placeholder="Введите формулы подсчета"
+                    rows={5}
                     data-testid="assignment-content-input"
                   />
                 </div>

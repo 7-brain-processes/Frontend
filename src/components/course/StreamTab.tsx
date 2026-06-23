@@ -21,16 +21,7 @@ interface StreamTabProps {
 
 const createInitialGradingConfig = (): UpsertGradingConfigRequest => ({
   maxGrade: 0,
-  criteria: [
-    {
-      id: '',
-      type: 'PERCENTAGE',
-      title: '',
-      maxPoints: 0,
-      weight: 0,
-      sortOrder: 0,
-    },
-  ],
+  criteria: [],
   modifiers: {
     deadlines: {
       enabled: false,
@@ -62,10 +53,11 @@ const normalizeGradingConfig = (
   gradingConfig?: Partial<UpsertGradingConfigRequest> | null
 ): UpsertGradingConfigRequest => {
   const initialConfig = createInitialGradingConfig();
+  const criteria = Array.isArray(gradingConfig?.criteria) ? gradingConfig?.criteria ?? [] : initialConfig.criteria;
 
   return {
     maxGrade: gradingConfig?.maxGrade ?? initialConfig.maxGrade,
-    criteria: gradingConfig?.criteria?.length ? gradingConfig.criteria : initialConfig.criteria,
+    criteria,
     modifiers: {
       deadlines: {
         ...initialConfig.modifiers.deadlines,
@@ -87,6 +79,17 @@ const normalizeGradingConfig = (
     resultsVisible: gradingConfig?.resultsVisible ?? initialConfig.resultsVisible,
   };
 };
+
+const buildGradingConfigPayload = (gradingConfig: UpsertGradingConfigRequest): UpsertGradingConfigRequest => ({
+  ...gradingConfig,
+  modifiers: {
+    ...gradingConfig.modifiers,
+    contributionVoting: {
+      enabled: false,
+      description: '',
+    },
+  },
+});
 
 const isGradingConfigUnsupportedError = (err: unknown): boolean => {
   const message = err instanceof Error ? err.message : String(err || '');
@@ -231,9 +234,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 
       return {
         ...prev,
-        criteria: nextCriteria.length
-          ? nextCriteria.map((criterion, criterionIndex) => ({ ...criterion, sortOrder: criterionIndex }))
-          : createInitialGradingConfig().criteria,
+        criteria: nextCriteria.map((criterion, criterionIndex) => ({ ...criterion, sortOrder: criterionIndex })),
       };
     });
   };
@@ -378,7 +379,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
 
   const saveGradingConfigIfSupported = async (postId: string) => {
     try {
-      await multiCriteriaGradingService.upsertGradingConfig(courseId, postId, gradingConfigForm);
+      await multiCriteriaGradingService.upsertGradingConfig(courseId, postId, buildGradingConfigPayload(gradingConfigForm));
     } catch (err) {
       if (isGradingConfigUnsupportedError(err)) {
         console.warn('Grading config endpoint is not available on this backend, skipping save.', err);
@@ -386,6 +387,32 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
       }
 
       throw err;
+    }
+  };
+
+  const deleteGradingConfigIfSupported = async (postId: string) => {
+    try {
+      await multiCriteriaGradingService.deleteGradingConfig(courseId, postId);
+    } catch (err) {
+      if (isGradingConfigUnsupportedError(err)) {
+        console.warn('Grading config endpoint is not available on this backend, skipping delete.', err);
+        return;
+      }
+
+      throw err;
+    }
+  };
+
+  const saveGradingConfigWithoutBreakingPost = async (postId: string) => {
+    try {
+      if (gradingConfigForm.criteria.length > 0) {
+        await saveGradingConfigIfSupported(postId);
+      } else {
+        await deleteGradingConfigIfSupported(postId);
+      }
+    } catch (err) {
+      console.error('Failed to save grading config:', err);
+      alert('Задание сохранено, но параметры и критерии сохранить не удалось');
     }
   };
 
@@ -414,7 +441,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
         });
 
         if (postForm.type === 'TASK') {
-          await multiCriteriaGradingService.upsertGradingConfig(courseId, editingPost.id, gradingConfigForm);
+          await saveGradingConfigWithoutBreakingPost(editingPost.id);
         }
 
         if (selectedFiles.length > 0) {
@@ -450,7 +477,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
             await applayTeamRequirementTemplate(templateId, newPost.id);
           }
 
-          await multiCriteriaGradingService.upsertGradingConfig(courseId, newPost.id, gradingConfigForm);
+          await saveGradingConfigWithoutBreakingPost(newPost.id);
 
           if (selectedFiles.length > 0) {
             for (const file of selectedFiles) {
@@ -908,8 +935,13 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                     />
                   </div>
                   <div>
-                    <h2>Модификаторы</h2>
-                    <h2>{'Критерии оценивания'}</h2>
+                    <h2>Критерии оценивания</h2>
+                    
+                    {gradingConfigForm.criteria.length === 0 && (
+                      <p className="grading-section-description">
+                        Критерии пока не добавлены.
+                      </p>
+                    )}
                     {gradingConfigForm.criteria.map((criterion, index) => (
                       <div key={`criterion-${index}`} style={criterionCardStyle}>
                         <div style={criterionHeaderStyle}>
@@ -976,87 +1008,8 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                     </button>
                   </div>
                   <div>
-                    <h2>{'Модификаторы'}</h2>
-                    <div className="grading-modifier-card" style={gradingModifierCardStyle}>
-                      <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
-                        <h2>Голосование за вклад</h2>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={gradingConfigForm.modifiers.contributionVoting.enabled}
-                              onChange={(_, checked) => setGradingConfigForm({
-                                ...gradingConfigForm,
-                                modifiers: {
-                                  ...gradingConfigForm.modifiers,
-                                  contributionVoting: {
-                                    ...gradingConfigForm.modifiers.contributionVoting,
-                                    enabled: checked,
-                                  },
-                                },
-                              })}
-                              color="primary"
-                            />
-                          }
-                          label=""
-                        />
-                      </div>
-                      <textarea
-                        style={gradingModifierFieldStyle}
-                        value={gradingConfigForm.modifiers.contributionVoting.description}
-                        onChange={(e) => setGradingConfigForm({
-                          ...gradingConfigForm,
-                          modifiers: {
-                            ...gradingConfigForm.modifiers,
-                            contributionVoting: {
-                              ...gradingConfigForm.modifiers.contributionVoting,
-                              description: e.target.value,
-                            },
-                          },
-                        })}
-                        placeholder="Введите описание"
-                        rows={4}
-                      />
-                    </div>
-                    <div className="grading-modifier-card" style={gradingModifierCardStyle}>
-                      <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
-                        <h2>Размер команды</h2>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={gradingConfigForm.modifiers.teamSize.enabled}
-                              onChange={(_, checked) => setGradingConfigForm({
-                                ...gradingConfigForm,
-                                modifiers: {
-                                  ...gradingConfigForm.modifiers,
-                                  teamSize: {
-                                    ...gradingConfigForm.modifiers.teamSize,
-                                    enabled: checked,
-                                  },
-                                },
-                              })}
-                              color="primary"
-                            />
-                          }
-                          label=""
-                        />
-                      </div>
-                      <textarea
-                        style={gradingModifierFieldStyle}
-                        value={gradingConfigForm.modifiers.teamSize.formula}
-                        onChange={(e) => setGradingConfigForm({
-                          ...gradingConfigForm,
-                          modifiers: {
-                            ...gradingConfigForm.modifiers,
-                            teamSize: {
-                              ...gradingConfigForm.modifiers.teamSize,
-                              formula: e.target.value,
-                            },
-                          },
-                        })}
-                        placeholder="Введите формулы подсчета"
-                        rows={4}
-                      />
-                    </div>
+                    <h2>Модификаторы</h2>
+                    
                     <div className="grading-modifier-card" style={gradingModifierCardStyle}>
                       <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
                         <h2>Прогресс регулярности</h2>
@@ -1240,10 +1193,54 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                       />
                     </div>
                   </div>
+                  <div>
+                    <h2>Командная оценка</h2>
+                    
+                    <div className="grading-modifier-card" style={gradingModifierCardStyle}>
+                      <div className="grading-modifier-card-header" style={gradingModifierCardHeaderStyle}>
+                        <h2>Размер команды</h2>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={gradingConfigForm.modifiers.teamSize.enabled}
+                              onChange={(_, checked) => setGradingConfigForm({
+                                ...gradingConfigForm,
+                                modifiers: {
+                                  ...gradingConfigForm.modifiers,
+                                  teamSize: {
+                                    ...gradingConfigForm.modifiers.teamSize,
+                                    enabled: checked,
+                                  },
+                                },
+                              })}
+                              color="primary"
+                            />
+                          }
+                          label=""
+                        />
+                      </div>
+                      <textarea
+                        style={gradingModifierFieldStyle}
+                        value={gradingConfigForm.modifiers.teamSize.formula}
+                        onChange={(e) => setGradingConfigForm({
+                          ...gradingConfigForm,
+                          modifiers: {
+                            ...gradingConfigForm.modifiers,
+                            teamSize: {
+                              ...gradingConfigForm.modifiers.teamSize,
+                              formula: e.target.value,
+                            },
+                          },
+                        })}
+                        placeholder="Введите формулы подсчета"
+                        rows={4}
+                      />
+                    </div>
+                  </div>
                 </div>
-              )}
+                )}
 
-              <div className="form-group">
+                <div className="form-group">
                 <label>Файлы</label>
                 <div className="file-upload">
                   <input
