@@ -200,6 +200,69 @@
   gap: 10px;
 }
 
+.criteria-grade-helper,
+.criteria-grade-error {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.criteria-grade-helper {
+  color: #5f6368;
+}
+
+.criteria-grade-error {
+  color: #d93025;
+}
+
+.criteria-grade-summary {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f1f8ff;
+  color: #174ea6;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.criteria-grade-summary-neutral {
+  background: #f8f9fa;
+  color: #202124;
+}
+
+.criteria-grade-card {
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fafbfc;
+  margin-bottom: 16px;
+}
+
+.criteria-grade-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.criteria-grade-card-header strong {
+  color: #202124;
+}
+
+.criteria-grade-card-header span {
+  color: #5f6368;
+  font-size: 13px;
+}
+
+.criteria-grade-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 12px;
+  color: #5f6368;
+  font-size: 14px;
+}
+
 .teams-section {
   display: flex;
   flex-direction: column;

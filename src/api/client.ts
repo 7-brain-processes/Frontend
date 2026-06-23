@@ -106,6 +106,15 @@ const baseApiRequest = async <T>(
     headers,
   };
 
+  if (endpoint === '/auth/login') {
+    console.log('[auth/login request]', {
+      url: `${API_BASE_URL}${endpoint}`,
+      method: config.method ?? 'GET',
+      headers,
+      body: typeof config.body === 'string' ? config.body : config.body ?? null,
+    });
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
   if (!response.ok) {
