@@ -13,7 +13,6 @@ import {
     FileDto,
     GradeVoteStatusDto,
     MyTeamGradeDto,
-    TeamGradeDto,
     CommentDto,
     CourseTeamAvailabilityDto,
     StudentTeamDto,
@@ -150,6 +149,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const [criteriaGradeEntries, setCriteriaGradeEntries] = useState<CriterionGradeEntryDto[]>([]);
     const [criteriaGradeResult, setCriteriaGradeResult] = useState<CriteriaGradeResultDto | null>(null);
     const [criteriaGradesBySolutionId, setCriteriaGradesBySolutionId] = useState<Record<string, CriteriaGradeResultDto>>({});
+    const [mySolutionGradeDecomposition, setMySolutionGradeDecomposition] = useState<CriteriaGradeResultDto | null>(null);
     const [criteriaGradeLoading, setCriteriaGradeLoading] = useState(false);
     const [criteriaGradeSaving, setCriteriaGradeSaving] = useState(false);
     const [criteriaGradeError, setCriteriaGradeError] = useState<string | null>(null);
@@ -172,9 +172,6 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     useEffect(() => {
         if (!loadingRole) {
             loadTask();
-            if (task?.deadline && new Date(task?.deadline) > new Date() && courseId && taskId) {
-                peer2peerService.distributeRound1(courseId, taskId);
-            }
             getMyAssignments();
         }
     }, [courseId, taskId, userRole, loadingRole]);
@@ -572,7 +569,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
 
             if (userRole === 'STUDENT') {
                 if (data.teamFormationMode === 'FREE') {
-                    await refreshTeamBlocks();
+                    resetTeamsState();
                 } else if (isCaptainSelectionMode(data.teamFormationMode)) {
                     setAvailableTeams([]);
                     setTeamsLoading(false);
@@ -626,7 +623,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
                     resetGradeVoteState();
                 }
 
-                await loadMySolution();
+                await loadMySolution(criteriaEnabledForTask);
             } else {
                 resetTeamsState();
                 if (data.teamFormationMode === 'RANDOM_SHUFFLE') {
@@ -887,7 +884,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         }
     };
 
-    const loadMySolution = async () => {
+    const loadMySolution = async (criteriaEnabled: boolean = hasCriteriaGrading) => {
         if (!courseId || !taskId) return;
 
         try {
@@ -895,6 +892,23 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             setMySolution(solution);
             setSolutionText(solution.text || '');
             setMySolutionComments(await loadCommentsForSolution(solution.id));
+
+            if (criteriaEnabled) {
+                try {
+                    const decomposition = await multiCriteriaGradingService.getGradeDecomposition(courseId, taskId, solution.id);
+                    setMySolutionGradeDecomposition(decomposition);
+                } catch (err: any) {
+                    const message = String(err?.message || '').toLowerCase();
+                    if (message.includes('404') || message.includes('not found')) {
+                        setMySolutionGradeDecomposition(null);
+                    } else {
+                        console.error('Failed to load my solution grade decomposition:', err);
+                        setMySolutionGradeDecomposition(null);
+                    }
+                }
+            } else {
+                setMySolutionGradeDecomposition(null);
+            }
 
             if (solution.filesCount > 0) {
                 try {
@@ -910,12 +924,14 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
         } catch (err: any) {
             if (err.message?.includes('404') || err.message?.includes('not found') || err.message?.includes('Не найдено')) {
                 setMySolution(null);
+                setMySolutionGradeDecomposition(null);
                 setSolutionText('');
                 setMySolutionFiles([]);
                 setMySolutionComments([]);
             } else {
                 console.error('Failed to load my solution:', err);
                 setMySolution(null);
+                setMySolutionGradeDecomposition(null);
                 setSolutionText('');
                 setMySolutionFiles([]);
                 setMySolutionComments([]);
@@ -1146,7 +1162,9 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const handleSaveCriteriaGrades = async () => {
         if (!courseId || !taskId || !selectedSolution || !criteriaGradingConfig) return;
 
-        const sortedCriteria = [...criteriaGradingConfig.criteria].sort((left, right) => left.sortOrder - right.sortOrder);
+        const sortedCriteria = [...criteriaGradingConfig.criteria]
+            .filter((criterion) => criterion.type !== 'PEER_REVIEW')
+            .sort((left, right) => left.sortOrder - right.sortOrder);
         const payloadEntries: CriterionGradeEntryDto[] = [];
 
         for (const criterion of sortedCriteria) {
@@ -1301,7 +1319,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
     const handleCancelSubmit = async () => {
         if (!courseId || !taskId || !mySolution) return;
 
-        if (mySolution.status === 'GRADED' || mySolution.grade !== null) {
+        if (mySolution.status === 'GRADED' || mySolution.grade !== null || !!mySolutionGradeDecomposition?.gradedAt) {
             alert('Оцененное решение нельзя удалить. Оценку можно только изменить.');
             return;
         }
@@ -1445,6 +1463,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             criteriaGradeEntries,
             criteriaGradeResult,
             criteriaGradesBySolutionId,
+            mySolutionGradeDecomposition,
             criteriaGradeLoading,
             criteriaGradeSaving,
             criteriaGradeError,
@@ -1486,6 +1505,7 @@ export const useTaskDetailPage = (userRole: CourseRole, loadingRole: boolean = f
             handleSendCaptainInvitation,
             retryLoadStudentInvitations: loadStudentInvitations,
             retryLoadMyTeamGrade: loadMyTeamGrade,
+            reloadTaskData: loadTask,
             handleRespondToInvitation,
             retryLoadGradeVote: loadGradeVote,
             handleGradeVoteFieldChange,

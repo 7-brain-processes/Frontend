@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTaskDetailPage } from './hooks/useTaskDetailPage';
-import { coursesService, postsService, teamGradesService, teamsService } from '../../api/services';
+import { coursesService, multiCriteriaGradingService, postsService, teamGradesService, teamsService } from '../../api/services';
 import { CourseRole, CourseTeamAvailabilityDto, CourseTeamDto } from '../../types/api';
 import { useTeamGrade } from '../../components/course/TeamGrade/hooks/useTeamGrade';
 import GradeDialog from '../../components/course/TeamGrade/GradeDialog';
 import CaptainGradeDialog from '../../components/course/TeamGrade/CaptainGradeDialog';
 import './TaskDetailPage.css';
 import MyAssignmentItem from './components/MyAssignmentItem';
+import { peer2peerService } from '../../api/peer-to-peer';
+import { PeerReviewConfigDto, UnderReviewedSolutionDto } from '../../types/Peer2peer';
+import { translateApiMessage } from '../../utils/translateApiMessage';
 
 const translateTeamFormationMode = {
   FREE: 'самостоятельное',
@@ -16,9 +19,27 @@ const translateTeamFormationMode = {
   RANDOM_SHUFFLE: 'рандомное'
 } as const;
 
+const translatePeerReviewMode = (mode: PeerReviewConfigDto['reviewMode']) => (
+  mode === 'ONE_TO_ONE' ? 'Один к одному' : 'Многие к одному'
+);
+
+const translatePeerReviewUsageType = (usageType: PeerReviewConfigDto['usageType']) => (
+  usageType === 'CRITERION' ? 'Критерий' : 'Отдельная оценка'
+);
+
+const translatePeerReviewScoring = (strategy: PeerReviewConfigDto['scoringStrategy']) => {
+  switch (strategy) {
+    case 'MIN':
+      return 'Минимум';
+    case 'MAX':
+      return 'Максимум';
+    default:
+      return 'Среднее';
+  }
+};
+
 const TaskDetailPage = () => {
   const { courseId, taskId } = useParams<{ courseId: string; taskId: string }>();
-  const getDisplayedCriteriaScore = (score: number) => Math.max(0, score - 2);
   const [userRole, setUserRole] = useState<CourseRole>('STUDENT');
   const [loadingRole, setLoadingRole] = useState(true);
   const [courseTeams, setCourseTeams] = useState<CourseTeamDto[]>([]);
@@ -30,6 +51,11 @@ const TaskDetailPage = () => {
   const [teacherFreeCreateLoading, setTeacherFreeCreateLoading] = useState(false);
   const [teacherFreeCreateError, setTeacherFreeCreateError] = useState<string | null>(null);
   const [teacherFreeCreateSuccess, setTeacherFreeCreateSuccess] = useState<string | null>(null);
+  const [peerReviewConfig, setPeerReviewConfig] = useState<PeerReviewConfigDto | null>(null);
+  const [underReviewedSolutions, setUnderReviewedSolutions] = useState<UnderReviewedSolutionDto[]>([]);
+  const [peerReviewLoadingAction, setPeerReviewLoadingAction] = useState<string | null>(null);
+  const [peerReviewActionMessage, setPeerReviewActionMessage] = useState<string | null>(null);
+  const [peerReviewActionError, setPeerReviewActionError] = useState<string | null>(null);
   const teamGrade = useTeamGrade(courseId, taskId);
 
   const loadTeamsForTeacher = React.useCallback(async () => {
@@ -97,6 +123,31 @@ const TaskDetailPage = () => {
   }, [loadTeamsForTeacher]);
 
   useEffect(() => {
+    const loadPeerReviewSection = async () => {
+      if (!courseId || !taskId || userRole !== 'TEACHER') {
+        setPeerReviewConfig(null);
+        setUnderReviewedSolutions([]);
+        return;
+      }
+
+      try {
+        const [config, underReviewed] = await Promise.all([
+          peer2peerService.getConfig(courseId, taskId).catch(() => null),
+          peer2peerService.getUnderReviewed(courseId, taskId).catch(() => []),
+        ]);
+
+        setPeerReviewConfig(config);
+        setUnderReviewedSolutions(underReviewed);
+      } catch {
+        setPeerReviewConfig(null);
+        setUnderReviewedSolutions([]);
+      }
+    };
+
+    loadPeerReviewSection();
+  }, [courseId, taskId, userRole]);
+
+  useEffect(() => {
     const loadTeamGradesForTeacher = async () => {
       if (!courseId || !taskId || userRole !== 'TEACHER' || courseTeams.length === 0) {
         setTeamGradesByTeamId({});
@@ -158,6 +209,21 @@ const TaskDetailPage = () => {
   }
 
   const deadline = state.task.deadline ? functions.formatDeadline(state.task.deadline) : null;
+  const isTeamTask = state.task.type === 'TASK'
+    && !!state.task.teamFormationMode
+    && state.task.teamFormationMode !== 'FREE';
+  const hasPeerReviewCriterion = !!state.criteriaGradingConfig?.criteria?.some((criterion) => criterion.type === 'PEER_REVIEW');
+  const canSubmitSolution = !isTeamTask || !!state.currentTeam;
+  const submitHintText = isTeamTask && state.currentTeam
+    ? `Решение будет отправлено от команды "${state.currentTeam.teamName}"`
+    : null;
+  const mySolutionCriteriaGrade = state.hasCriteriaGrading ? state.mySolutionGradeDecomposition : null;
+  const hasMySolutionCriteriaGrade = !!mySolutionCriteriaGrade?.gradedAt;
+  const isPeerReviewCriterionMode = peerReviewConfig?.usageType === 'CRITERION';
+  const canPublishCriteriaGrades = isPeerReviewCriterionMode
+    && Object.values(state.criteriaGradesBySolutionId).some((grade) => !!grade?.gradedAt && !grade.isPublished);
+  const canUnpublishCriteriaGrades = isPeerReviewCriterionMode
+    && Object.values(state.criteriaGradesBySolutionId).some((grade) => !!grade?.gradedAt && grade.isPublished);
 
   const isLateSolution = (submittedAt: string) => {
     if (!state.task?.deadline) {
@@ -364,11 +430,39 @@ const TaskDetailPage = () => {
       setTeacherFreeCreateSuccess(`Команда ${normalizedName} успешно создана`);
       setTeacherFreeTeamName('');
       await loadTeamsForTeacher();
+      setPeerReviewActionMessage('Действие peer review выполнено');
     } catch (err: any) {
       console.error('Failed to create assignment team:', err);
       setTeacherFreeCreateError(err.message || 'Не удалось создать команду задания');
+      setPeerReviewActionError(translateApiMessage(err?.message, 'Не удалось выполнить действие peer review'));
     } finally {
       setTeacherFreeCreateLoading(false);
+    }
+  };
+
+  const runPeerReviewAction = async (actionKey: string, action: () => Promise<void>) => {
+    if (!courseId || !taskId) {
+      return;
+    }
+
+    try {
+      setPeerReviewLoadingAction(actionKey);
+      setPeerReviewActionError(null);
+      setPeerReviewActionMessage(null);
+
+      await action();
+      await functions.reloadTaskData();
+
+      const refreshedConfig = await peer2peerService.getConfig(courseId, taskId).catch(() => null);
+      const refreshedUnderReviewed = await peer2peerService.getUnderReviewed(courseId, taskId).catch(() => []);
+      setPeerReviewConfig(refreshedConfig);
+      setUnderReviewedSolutions(refreshedUnderReviewed);
+      setPeerReviewActionMessage('Действие peer review выполнено');
+    } catch (err: any) {
+      console.error('Failed to run peer review action:', err);
+      setPeerReviewActionError(err?.message || 'Не удалось выполнить действие peer review');
+    } finally {
+      setPeerReviewLoadingAction(null);
     }
   };
 
@@ -418,25 +512,148 @@ const TaskDetailPage = () => {
               </div>
             )}
 
-            <span>Мои заявки:</span>
-            {state.myAssignments.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {
-                  state.myAssignments.map(myAssignment => (
-                    <MyAssignmentItem key={myAssignment.assignmentId} myAssignment={myAssignment} courseId={courseId} taskId={taskId} />
-                  ))
-                }
-              </div>
-            ) : (
-              <span>Нет заявок</span>
-            )
-            }
-
             {state.task.teamFormationMode && (
               <div className="task-description">
                 <p className="assignment-preview">
                   Распределение по командам: {translateTeamFormationMode[state.task.teamFormationMode]}
                 </p>
+              </div>
+            )}
+
+            {hasPeerReviewCriterion && userRole === 'STUDENT' && (
+              <div className="task-description">
+                <h3>Мои p2p-проверки</h3>
+                {state.myAssignments.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {state.myAssignments.map((myAssignment) => (
+                      <MyAssignmentItem
+                        key={myAssignment.assignmentId}
+                        myAssignment={myAssignment}
+                        courseId={courseId}
+                        taskId={taskId}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="teams-state">
+                    Сейчас для вас нет назначенных проверок. Это может значить, что преподаватель ещё не запускал раздачу или вы не попали в текущий раунд.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {userRole === 'TEACHER' && hasPeerReviewCriterion && (
+              <div className="task-description">
+                <div className="captains-header">
+                  <div>
+                    <h3>P2P</h3>
+                    <p>Управление раундами взаимной проверки и применением оценок.</p>
+                  </div>
+                </div>
+
+                {peerReviewConfig && (
+                  <div className="grade-vote-summary" style={{ marginBottom: '16px' }}>
+                    <div className="auto-summary-item">
+                      <strong>{translatePeerReviewMode(peerReviewConfig.reviewMode)}</strong>
+                      <span>Режим</span>
+                    </div>
+                    <div className="auto-summary-item">
+                      <strong>{translatePeerReviewScoring(peerReviewConfig.scoringStrategy)}</strong>
+                      <span>Стратегия</span>
+                    </div>
+                    <div className="auto-summary-item">
+                      <strong>{translatePeerReviewUsageType(peerReviewConfig.usageType)}</strong>
+                      <span>Использование</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="captains-actions" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-small"
+                    disabled={peerReviewLoadingAction !== null}
+                    onClick={() => runPeerReviewAction('distribute-round-1', () => peer2peerService.distributeRound1(courseId!, taskId!))}
+                  >
+                    {peerReviewLoadingAction === 'distribute-round-1' ? 'Раздаю...' : 'Раздать раунд 1'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-small"
+                    disabled={peerReviewLoadingAction !== null}
+                    onClick={() => runPeerReviewAction('distribute-round-2', () => peer2peerService.distributeRound2(courseId!, taskId!))}
+                  >
+                    {peerReviewLoadingAction === 'distribute-round-2' ? 'Раздаю...' : 'Раздать раунд 2'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-small"
+                    disabled={peerReviewLoadingAction !== null}
+                    onClick={() => runPeerReviewAction('close-round-1', () => peer2peerService.closeRound1(courseId!, taskId!))}
+                  >
+                    {peerReviewLoadingAction === 'close-round-1' ? 'Закрываю...' : 'Закрыть раунд 1'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-small"
+                    disabled={peerReviewLoadingAction !== null}
+                    onClick={() => runPeerReviewAction('close-round-2', () => peer2peerService.closeRound2(courseId!, taskId!).then(() => undefined))}
+                  >
+                    {peerReviewLoadingAction === 'close-round-2' ? 'Закрываю...' : 'Закрыть раунд 2'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary btn-small"
+                    disabled={peerReviewLoadingAction !== null}
+                    onClick={() => runPeerReviewAction('apply-grades', () => peer2peerService.applyGrades(courseId!, taskId!))}
+                  >
+                    {peerReviewLoadingAction === 'apply-grades' ? 'Применяю...' : 'Применить p2p-оценки'}
+                  </button>
+                  {isPeerReviewCriterionMode && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-small"
+                        disabled={peerReviewLoadingAction !== null || !canPublishCriteriaGrades}
+                        onClick={() => runPeerReviewAction('publish-criteria', () => multiCriteriaGradingService.publishCriteriaGrades(courseId!, taskId!))}
+                      >
+                        {peerReviewLoadingAction === 'publish-criteria' ? 'Публикую...' : 'Опубликовать оценки'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-small"
+                        disabled={peerReviewLoadingAction !== null || !canUnpublishCriteriaGrades}
+                        onClick={() => runPeerReviewAction('unpublish-criteria', () => multiCriteriaGradingService.unpublishCriteriaGrades(courseId!, taskId!))}
+                      >
+                        {peerReviewLoadingAction === 'unpublish-criteria' ? 'Скрываю...' : 'Скрыть оценки'}
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {peerReviewActionMessage && (
+                  <div className="teams-state teams-state-success">{peerReviewActionMessage}</div>
+                )}
+
+                {peerReviewActionError && (
+                  <div className="teams-state teams-state-error">{peerReviewActionError}</div>
+                )}
+
+                <div>
+                  <h4>Проблемные работы</h4>
+                  {underReviewedSolutions.length === 0 ? (
+                    <div className="teams-state">Недопроверенных решений сейчас нет.</div>
+                  ) : (
+                    <div className="auto-students-list">
+                      {underReviewedSolutions.map((item) => (
+                        <div key={item.solutionId} className="auto-student-item">
+                          <span className="auto-student-name">{item.studentUsername}</span>
+                          <span>{item.completedReviews} / {item.requiredReviews}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1044,6 +1261,7 @@ const TaskDetailPage = () => {
                     {state.captains.map((captain) => {
                       const isCurrentUserCaptain = state.currentUser?.id === captain.userId;
 
+
                       return (
                         <div key={captain.userId} className={`captain-card ${isCurrentUserCaptain ? 'captain-card-current' : ''}`}>
                           <div className="captain-main">
@@ -1451,11 +1669,23 @@ const TaskDetailPage = () => {
                       </div>
                     )}
                   </div>
-                  {state.mySolution.grade !== null && (
+                  {state.hasCriteriaGrading ? (
+                    hasMySolutionCriteriaGrade ? (
+                      mySolutionCriteriaGrade.isPublished ? (
+                        <div className="solution-grade-display">
+                          Оценка за решение: {mySolutionCriteriaGrade.finalScore} / {mySolutionCriteriaGrade.maxGrade}
+                        </div>
+                      ) : (
+                        <div className="solution-grade-display">
+                          Оценка уже рассчитана, но станет видна после публикации преподавателем
+                        </div>
+                      )
+                    ) : null
+                  ) : state.mySolution.grade !== null ? (
                     <div className="solution-grade-display">
                       Оценка: {state.mySolution.grade} / 100
                     </div>
-                  )}
+                  ) : null}
                   <div className="solution-comments-block">
                     <h4>Комментарии преподавателя</h4>
                     {state.mySolutionComments.length === 0 ? (
@@ -1481,7 +1711,7 @@ const TaskDetailPage = () => {
                       </div>
                     )}
                   </div>
-                  {state.mySolution.grade === null && state.mySolution.status !== 'GRADED' && (
+                  {!hasMySolutionCriteriaGrade && state.mySolution.grade === null && state.mySolution.status !== 'GRADED' && (
                     <button
                       className="btn-cancel-submit"
                       onClick={functions.handleCancelSubmit}
@@ -1490,9 +1720,20 @@ const TaskDetailPage = () => {
                     </button>
                   )}
                 </div>
+              ) : !canSubmitSolution ? (
+                <div className="sidebar-content">
+                  <div className="teams-state teams-state-error">
+                    Сначала вступите в команду для этого задания
+                  </div>
+                </div>
               ) : state.showSubmitForm ? (
                 <div className="sidebar-content">
                   <div className="submit-form">
+                    {submitHintText && (
+                      <div className="teams-state teams-state-success" style={{ marginBottom: '12px' }}>
+                        {submitHintText}
+                      </div>
+                    )}
                     <textarea
                       value={state.solutionText}
                       onChange={(e) => functions.setSolutionText(e.target.value)}
@@ -1547,9 +1788,15 @@ const TaskDetailPage = () => {
                   <button
                     className="btn-add-work"
                     onClick={() => functions.setShowSubmitForm(true)}
+                    disabled={!canSubmitSolution}
                   >
                     + Добавить работу
                   </button>
+                  {!canSubmitSolution && (
+                    <div className="teams-state teams-state-error" style={{ marginTop: '12px' }}>
+                      Для этого задания нужно состоять в команде
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1638,8 +1885,7 @@ const TaskDetailPage = () => {
                                   if (!solutionCriteriaGrade?.gradedAt) {
                                     return 'Оценка за решение: не выставлена';
                                   }
-                                  const displayedScore = getDisplayedCriteriaScore(solutionCriteriaGrade.finalScore);
-                                  return `Оценка за решение: ${displayedScore} / ${solutionCriteriaGrade.maxGrade}`;
+                                  return `Оценка за решение: ${solutionCriteriaGrade.finalScore} / ${solutionCriteriaGrade.maxGrade}`;
                                 })()
                               : `Оценка: ${solution.grade !== null ? solution.grade : 'не выставлена'}`}
                           </span>
@@ -1735,7 +1981,7 @@ const TaskDetailPage = () => {
                   )}
                   {state.criteriaGradeResult && (
                     <div className="criteria-grade-summary">
-                      <span>Текущий итог: {getDisplayedCriteriaScore(state.criteriaGradeResult.finalScore)} / {state.criteriaGradeResult.maxGrade}</span>
+                      <span>Текущий итог: {state.criteriaGradeResult.finalScore} / {state.criteriaGradeResult.maxGrade}</span>
                     </div>
                   )}
                   {state.criteriaGradingConfig && (
@@ -1753,7 +1999,35 @@ const TaskDetailPage = () => {
                         ? 'Да / нет'
                         : criterion.type === 'PERCENTAGE'
                           ? 'Проценты'
-                          : 'Баллы';
+                          : criterion.type === 'PEER_REVIEW'
+                            ? 'P2P'
+                            : 'Баллы';
+
+                      if (criterion.type === 'PEER_REVIEW') {
+                        const savedPeerReviewGrade = state.criteriaGradeResult?.criteriaGrades.find(
+                          (item) => item.criterion.id === criterion.id
+                        );
+
+                        return (
+                          <div className="criteria-grade-card" key={criterion.id}>
+                            <div className="criteria-grade-card-header">
+                              <strong>{criterion.title}</strong>
+                              <span>Критерий</span>
+                            </div>
+                            <div className="criteria-grade-meta">
+                              <span><strong>Тип:</strong> {criterionTypeLabel}</span>
+                              <span><strong>Максимум:</strong> {maxValue}</span>
+                            </div>
+                            <div className="criteria-grade-summary criteria-grade-summary-neutral">
+                              <span>
+                                {savedPeerReviewGrade
+                                  ? `Оценка считается автоматически по p2p: ${savedPeerReviewGrade.value}`
+                                  : 'Этот критерий считается автоматически по p2p и не заполняется вручную'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      }
 
                       return (
                         <div className="criteria-grade-card" key={criterion.id}>

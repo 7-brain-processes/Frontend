@@ -9,6 +9,7 @@ const directTranslations: Record<string, string> = {
   'not found': 'Не найдено',
   'Not found': 'Не найдено',
   'Captains are already selected for this assignment. Set reshuffle=true to reselect': 'Капитаны для этого задания уже выбраны. Запустите повторный выбор капитанов.',
+  'No grades to publish': 'ÐÐµÑ‚ Ð¾Ñ†ÐµÐ½Ð¾Ðº Ð´Ð»Ñ Ð¿ÑƒÐ±Ð»Ð¸ÐºÐ°Ñ†Ð¸Ð¸',
 };
 
 const translateHttpStatus = (message: string): string | null => {

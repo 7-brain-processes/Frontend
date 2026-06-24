@@ -54,3 +54,7 @@ export interface UnderReviewedSolutionDto {
     requiredReviews: number;
     completedReviews: number;
 }
+
+export interface ClosePeerReviewRoundResponseDto {
+    underReviewedSolutions: UnderReviewedSolutionDto[];
+}

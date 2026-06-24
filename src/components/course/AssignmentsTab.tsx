@@ -6,7 +6,7 @@ import { categoryService, multiCriteriaGradingService, postsService, solutionsSe
 import { FormControl, FormControlLabel, MenuItem, Select, Switch } from "@mui/material";
 import { TeamRequirementTemplateDto } from '../../types/TeamRequirementTemplate';
 import { CriteriaGradeResultDto, CriterionConfigDto, CriterionType, UpsertGradingConfigRequest } from '../../types/Criterion';
-import { PeerReviewConfigRequest, PeerReviewReviewMode, PeerReviewScoringStrategy, PeerReviewUsageType } from '../../types/Peer2peer';
+import { PeerReviewConfigRequest } from '../../types/Peer2peer';
 
 const generateTemplateName = () => {
   const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -60,11 +60,38 @@ const createInitialGradingConfig = (): UpsertGradingConfigRequest => ({
   resultsVisible: true,
 });
 
+const createInitialPeerReviewConfig = (): PeerReviewConfigRequest => ({
+  reviewersCount: 0,
+  scoringStrategy: 'AVERAGE',
+  firstDeadline: new Date(),
+  secondDeadline: new Date(),
+  redistributionFactor: 0,
+  missedReviewPenalty: 0,
+  reviewMode: 'ONE_TO_ONE',
+  usageType: 'CRITERION',
+});
+
+const formatPeerReviewDateInput = (value: Date | string | undefined): string => {
+  if (!value) return '';
+  return new Date(value).toISOString().split('T')[0];
+};
+
 const normalizeGradingConfig = (
   gradingConfig?: Partial<UpsertGradingConfigRequest> | null
 ): UpsertGradingConfigRequest => {
   const initialConfig = createInitialGradingConfig();
-  const criteria = Array.isArray(gradingConfig?.criteria) ? gradingConfig?.criteria ?? [] : initialConfig.criteria;
+  const criteria = Array.isArray(gradingConfig?.criteria)
+    ? (gradingConfig?.criteria ?? []).map((criterion) => ({
+      ...criterion,
+      peerReviewConfigRequest: criterion.type === 'PEER_REVIEW'
+        ? {
+          ...createInitialPeerReviewConfig(),
+          ...(criterion.peerReviewConfig ?? {}),
+          ...(criterion.peerReviewConfigRequest ?? {}),
+        }
+        : criterion.peerReviewConfigRequest,
+    }))
+    : initialConfig.criteria;
 
   return {
     maxGrade: gradingConfig?.maxGrade ?? initialConfig.maxGrade,
@@ -217,12 +244,18 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
     setGradingConfigForm(prev => ({
       ...prev,
       criteria: prev.criteria.map((criterion, criterionIndex) =>
-        criterionIndex === index ? { ...criterion, [field]: value } : criterion
+        criterionIndex === index ? {
+          ...criterion,
+          [field]: value,
+          ...(field === 'type' && value === 'PEER_REVIEW' && !criterion.peerReviewConfigRequest
+            ? { peerReviewConfigRequest: createInitialPeerReviewConfig() }
+            : {}),
+        } : criterion
       ),
     }));
   };
 
-  const updatePeerReviewConfig = (index: number, field: keyof PeerReviewConfigRequest, value: string | number | PeerReviewReviewMode | PeerReviewUsageType | PeerReviewScoringStrategy) => {
+  const updatePeerReviewConfig = (index: number, field: keyof PeerReviewConfigRequest, value: PeerReviewConfigRequest[keyof PeerReviewConfigRequest] | string) => {
     setGradingConfigForm(prev => ({
       ...prev,
       criteria: prev.criteria.map((criterion, criterionIndex) =>
@@ -230,8 +263,11 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
           ? ({
             ...criterion,
             peerReviewConfigRequest: {
+              ...createInitialPeerReviewConfig(),
               ...(criterion.peerReviewConfigRequest || {}),
-              [field]: value
+              [field]: (field === 'firstDeadline' || field === 'secondDeadline') && typeof value === 'string'
+                ? new Date(value)
+                : value
             }
           } as CriterionConfigDto)
           : criterion
@@ -252,16 +288,6 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
           maxPoints: 0,
           weight: 0,
           sortOrder: prev.criteria.length,
-          peerReviewConfigRequest: {
-            reviewersCount: 0,
-            scoringStrategy: 'AVERAGE',
-            firstDeadline: new Date(),
-            secondDeadline: new Date(),
-            redistributionFactor: 0,
-            missedReviewPenalty: 0,
-            reviewMode: 'ONE_TO_ONE',
-            usageType: 'CRITERION'
-          }
         },
       ],
     }));
@@ -1282,7 +1308,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                           <select
                             id={`criterion-scoring-strategy-${index}`}
                             value={criterion.peerReviewConfigRequest?.scoringStrategy}
-                            onChange={e => updatePeerReviewConfig(index, 'scoringStrategy', e.target.value as PeerReviewScoringStrategy)}
+                            onChange={e => updatePeerReviewConfig(index, 'scoringStrategy', e.target.value as PeerReviewConfigRequest['scoringStrategy'])}
                             style={gradingModifierFieldStyle}
                           >
                             <option value="AVERAGE">Среднее</option>
@@ -1295,7 +1321,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                           <input
                             id={`criterion-first-deadline-${index}`}
                             type="date"
-                            value={criterion.peerReviewConfigRequest?.firstDeadline.toISOString()}
+                            value={formatPeerReviewDateInput(criterion.peerReviewConfigRequest?.firstDeadline)}
                             onChange={e => updatePeerReviewConfig(index, 'firstDeadline', e.target.value)}
                           />
                         </div>
@@ -1304,7 +1330,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                           <input
                             id={`criterion-second-deadline-${index}`}
                             type="date"
-                            value={criterion.peerReviewConfigRequest?.secondDeadline.toISOString()}
+                            value={formatPeerReviewDateInput(criterion.peerReviewConfigRequest?.secondDeadline)}
                             onChange={e => updatePeerReviewConfig(index, 'secondDeadline', e.target.value)}
                           />
                         </div>
@@ -1331,7 +1357,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                           <select
                             id={`criterion-review-mode-${index}`}
                             value={criterion.peerReviewConfigRequest?.reviewMode}
-                            onChange={e => updatePeerReviewConfig(index, 'reviewMode', e.target.value as PeerReviewReviewMode)}
+                            onChange={e => updatePeerReviewConfig(index, 'reviewMode', e.target.value as PeerReviewConfigRequest['reviewMode'])}
                             style={gradingModifierFieldStyle}
                           >
                             <option value="ONE_TO_ONE">Один к одному</option>
@@ -1354,7 +1380,7 @@ export default function AssignmentsTab({ courseId, userRole }: AssignmentsTabPro
                           <select
                             id={`criterion-usage-type-${index}`}
                             value={criterion.peerReviewConfigRequest?.usageType}
-                            onChange={e => updatePeerReviewConfig(index, 'usageType', e.target.value as PeerReviewUsageType)}
+                            onChange={e => updatePeerReviewConfig(index, 'usageType', e.target.value as PeerReviewConfigRequest['usageType'])}
                             style={gradingModifierFieldStyle}
                           >
                             <option value="CRITERION">Критерий</option>

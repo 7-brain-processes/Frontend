@@ -50,11 +50,38 @@ const createInitialGradingConfig = (): UpsertGradingConfigRequest => ({
   resultsVisible: true,
 });
 
+const createInitialPeerReviewConfig = (): PeerReviewConfigRequest => ({
+  reviewersCount: 0,
+  scoringStrategy: 'AVERAGE',
+  firstDeadline: new Date(),
+  secondDeadline: new Date(),
+  redistributionFactor: 0,
+  missedReviewPenalty: 0,
+  reviewMode: 'ONE_TO_ONE',
+  usageType: 'CRITERION',
+});
+
+const formatPeerReviewDateInput = (value: Date | string | undefined): string => {
+  if (!value) return '';
+  return new Date(value).toISOString().split('T')[0];
+};
+
 const normalizeGradingConfig = (
   gradingConfig?: Partial<UpsertGradingConfigRequest> | null
 ): UpsertGradingConfigRequest => {
   const initialConfig = createInitialGradingConfig();
-  const criteria = Array.isArray(gradingConfig?.criteria) ? gradingConfig?.criteria ?? [] : initialConfig.criteria;
+  const criteria = Array.isArray(gradingConfig?.criteria)
+    ? (gradingConfig?.criteria ?? []).map((criterion) => ({
+      ...criterion,
+      peerReviewConfigRequest: criterion.type === 'PEER_REVIEW'
+        ? {
+          ...createInitialPeerReviewConfig(),
+          ...(criterion.peerReviewConfig ?? {}),
+          ...(criterion.peerReviewConfigRequest ?? {}),
+        }
+        : criterion.peerReviewConfigRequest,
+    }))
+    : initialConfig.criteria;
 
   return {
     maxGrade: gradingConfig?.maxGrade ?? initialConfig.maxGrade,
@@ -207,12 +234,18 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
     setGradingConfigForm(prev => ({
       ...prev,
       criteria: prev.criteria.map((criterion, criterionIndex) =>
-        criterionIndex === index ? { ...criterion, [field]: value } : criterion
+        criterionIndex === index ? {
+          ...criterion,
+          [field]: value,
+          ...(field === 'type' && value === 'PEER_REVIEW' && !criterion.peerReviewConfigRequest
+            ? { peerReviewConfigRequest: createInitialPeerReviewConfig() }
+            : {}),
+        } : criterion
       ),
     }));
   };
 
-  const updatePeerReviewConfig = (index: number, field: keyof PeerReviewConfigRequest, value: string | number | PeerReviewReviewMode | PeerReviewUsageType | PeerReviewScoringStrategy) => {
+  const updatePeerReviewConfig = (index: number, field: keyof PeerReviewConfigRequest, value: PeerReviewConfigRequest[keyof PeerReviewConfigRequest] | string) => {
     setGradingConfigForm(prev => ({
       ...prev,
       criteria: prev.criteria.map((criterion, criterionIndex) =>
@@ -220,8 +253,11 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
           ? ({
             ...criterion,
             peerReviewConfigRequest: {
+              ...createInitialPeerReviewConfig(),
               ...(criterion.peerReviewConfigRequest || {}),
-              [field]: value
+              [field]: (field === 'firstDeadline' || field === 'secondDeadline') && typeof value === 'string'
+                ? new Date(value)
+                : value
             }
           } as CriterionConfigDto)
           : criterion
@@ -989,6 +1025,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                               <option value="PERCENTAGE">{'Проценты'}</option>
                               <option value="POINTS">{'Баллы'}</option>
                               <option value="YES_NO">{'Да / нет'}</option>
+                              <option value="PEER_REVIEW">{'Проверка студентом (peer-to-peer)'}</option>
                             </select>
                           </div>
                           <div className="form-group" style={{ marginBottom: 0 }}>
@@ -1027,7 +1064,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                               <select
                                 id={`criterion-scoring-strategy-${index}`}
                                 value={criterion.peerReviewConfigRequest?.scoringStrategy}
-                                onChange={e => updatePeerReviewConfig(index, 'scoringStrategy', e.target.value as PeerReviewScoringStrategy)}
+                                onChange={e => updatePeerReviewConfig(index, 'scoringStrategy', e.target.value as PeerReviewConfigRequest['scoringStrategy'])}
                                 style={gradingModifierFieldStyle}
                               >
                                 <option value="AVERAGE">Среднее</option>
@@ -1040,7 +1077,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                               <input
                                 id={`criterion-first-deadline-${index}`}
                                 type="date"
-                                value={criterion.peerReviewConfigRequest?.firstDeadline.toISOString()}
+                                value={formatPeerReviewDateInput(criterion.peerReviewConfigRequest?.firstDeadline)}
                                 onChange={e => updatePeerReviewConfig(index, 'firstDeadline', e.target.value)}
                               />
                             </div>
@@ -1049,7 +1086,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                               <input
                                 id={`criterion-second-deadline-${index}`}
                                 type="date"
-                                value={criterion.peerReviewConfigRequest?.secondDeadline.toISOString()}
+                                value={formatPeerReviewDateInput(criterion.peerReviewConfigRequest?.secondDeadline)}
                                 onChange={e => updatePeerReviewConfig(index, 'secondDeadline', e.target.value)}
                               />
                             </div>
@@ -1076,7 +1113,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                               <select
                                 id={`criterion-review-mode-${index}`}
                                 value={criterion.peerReviewConfigRequest?.reviewMode}
-                                onChange={e => updatePeerReviewConfig(index, 'reviewMode', e.target.value as PeerReviewReviewMode)}
+                                onChange={e => updatePeerReviewConfig(index, 'reviewMode', e.target.value as PeerReviewConfigRequest['reviewMode'])}
                                 style={gradingModifierFieldStyle}
                               >
                                 <option value="ONE_TO_ONE">Один к одному</option>
@@ -1099,7 +1136,7 @@ const StreamTab: React.FC<StreamTabProps> = ({ courseId, userRole }) => {
                               <select
                                 id={`criterion-usage-type-${index}`}
                                 value={criterion.peerReviewConfigRequest?.usageType}
-                                onChange={e => updatePeerReviewConfig(index, 'usageType', e.target.value as PeerReviewUsageType)}
+                                onChange={e => updatePeerReviewConfig(index, 'usageType', e.target.value as PeerReviewConfigRequest['usageType'])}
                                 style={gradingModifierFieldStyle}
                               >
                                 <option value="CRITERION">Критерий</option>

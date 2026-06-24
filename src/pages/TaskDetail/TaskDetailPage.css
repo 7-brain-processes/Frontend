@@ -1033,6 +1033,143 @@
   color: #b3261e;
 }
 
+.peer-review-assignment-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #dadce0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  box-shadow: 0 1px 3px rgba(32, 33, 36, 0.08);
+}
+
+.peer-review-assignment-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.peer-review-assignment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.peer-review-status {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #eef3fd;
+  color: #174ea6;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.peer-review-solution-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.peer-review-solution-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5f6368;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.peer-review-solution-text {
+  padding: 14px 16px;
+  border: 1px solid #e3e7ee;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #202124;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.peer-review-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #e6f4ea;
+  color: #137333;
+  font-size: 14px;
+}
+
+.peer-review-assignment-note {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff8e1;
+  border: 1px solid #f1d18a;
+  color: #8d6e00;
+  font-size: 14px;
+}
+
+.peer-review-form {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.peer-review-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.peer-review-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3c4043;
+  line-height: 1.4;
+}
+
+.peer-review-input,
+.peer-review-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #d2d7e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #202124;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.peer-review-input:focus,
+.peer-review-textarea:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
+}
+
+.peer-review-textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.peer-review-submit {
+  min-width: 140px;
+  height: 48px;
+  border-radius: 12px;
+  padding: 0 22px;
+  align-self: stretch;
+}
+
 .task-material-item {
   display: flex;
   align-items: center;
@@ -1839,5 +1976,16 @@
 
   .form-actions button {
     width: 100%;
+  }
+
+  .peer-review-assignment-header,
+  .peer-review-form {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .peer-review-submit {
+    width: 100%;
+    min-width: 0;
   }
 }
